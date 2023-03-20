@@ -1,4 +1,4 @@
-package windows
+package plat_win
 
 const (
 	ATA_PASSTHROUGH     = 0xa1

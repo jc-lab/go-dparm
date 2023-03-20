@@ -1,14 +1,14 @@
 //go:build windows
 // +build windows
 
-package windows
+package plat_win
 
 import (
 	"golang.org/x/sys/windows"
 	"unsafe"
 )
 
-func openDevice(path string) (windows.Handle, error) {
+func OpenDevice(path string) (windows.Handle, error) {
 	sPath, err := windows.UTF16PtrFromString(path)
 	if err != nil {
 		return 0, err
@@ -32,4 +32,11 @@ func copyToPointer(dest unsafe.Pointer, src []byte, len int) {
 func copyFromPointer(dest []byte, src unsafe.Pointer, len int) {
 	srcRef := unsafe.Slice((*byte)(src), len)
 	copy(dest, srcRef[:len])
+}
+
+func copyFromAsciiToBuffer(dest []byte, text string) {
+	c := len(text)
+	for i := 0; i < c; i++ {
+		dest[i] = text[i]
+	}
 }

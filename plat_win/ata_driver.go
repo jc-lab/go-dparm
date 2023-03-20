@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package windows
+package plat_win
 
 import (
 	"fmt"
@@ -27,10 +27,12 @@ const (
 )
 
 type AtaDriver struct {
-	common.Driver
+	WinDriver
 }
 
 type AtaDriverHandle struct {
+	common.AtaDriverHandle
+	d      *AtaDriver
 	handle windows.Handle
 }
 
@@ -38,37 +40,12 @@ func NewAtaDriver() *AtaDriver {
 	return &AtaDriver{}
 }
 
-func (d *AtaDriver) OpenByPath(path string) (common.DriveHandle, error) {
-	handle, err := openDevice(path)
-	if err != nil {
-		return nil, err
-	}
-
+func (d *AtaDriver) OpenByHandle(handle windows.Handle) (common.DriverHandle, error) {
 	driverHandle, err := d.openImpl(handle)
-	if err != nil {
-		_ = windows.CloseHandle(handle)
-	}
 	return driverHandle, err
 }
 
-func (d *AtaDriver) OpenByWindowsPhysicalDrive(path *common.WindowsPhysicalDrive) (common.DriveHandle, error) {
-	handle, err := openDevice(path.PhysicalDiskPath)
-	if err != nil {
-		return nil, err
-	}
-
-	driverHandle, err := d.openImpl(handle)
-	if err != nil {
-		_ = windows.CloseHandle(handle)
-	}
-	return driverHandle, err
-}
-
-func (d *AtaDriver) openImpl(handle windows.Handle) (common.DriveHandle, error) {
-	driverHandle := &AtaDriverHandle{
-		handle: handle,
-	}
-
+func (d *AtaDriver) openImpl(handle windows.Handle) (*AtaDriverHandle, error) {
 	tf := &ata.Tf{
 		Command: ATA_IDENTIFY_DEVICE,
 	}
@@ -80,8 +57,7 @@ func (d *AtaDriver) openImpl(handle windows.Handle) (common.DriveHandle, error) 
 	}
 
 	dataBuffer := internal.NewAlignedBuffer(512, dataSize)
-	if err := d.doTaskFileCmd(driverHandle.handle, false, false, tf, dataBuffer.GetBuffer(), 10); err != nil {
-		println(err.Error())
+	if err := d.doTaskFileCmd(handle, false, false, tf, dataBuffer.GetBuffer(), 10); err != nil {
 		return nil, err
 	}
 
@@ -90,7 +66,10 @@ func (d *AtaDriver) openImpl(handle windows.Handle) (common.DriveHandle, error) 
 		return nil, err
 	}
 
-	return driverHandle, nil
+	return &AtaDriverHandle{
+		d:      d,
+		handle: handle,
+	}, nil
 }
 
 func (d *AtaDriver) doTaskFileCmd(handle windows.Handle, rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
@@ -205,27 +184,22 @@ func (d *AtaDriver) doTaskFileCmd(handle windows.Handle, rw bool, dma bool, tf *
 	return rootError
 }
 
-func (s AtaDriverHandle) GetDriverName() string {
-	//TODO implement me
-	panic("implement me")
+func (s *AtaDriverHandle) GetDriverName() string {
+	return "WindowsAtaDriver"
 }
 
-func (s AtaDriverHandle) MergeDriveInfo(data common.DriveInfo) {
-	//TODO implement me
-	panic("implement me")
+func (s *AtaDriverHandle) GetDrivingType() common.DrivingType {
+	return common.DrivingAtapi
 }
 
-func (s AtaDriverHandle) GetDrivingType() common.DrivingType {
-	//TODO implement me
-	panic("implement me")
+func (s *AtaDriverHandle) ReopenWritable() error {
+	return nil
 }
 
-func (s AtaDriverHandle) ReopenWritable() error {
-	//TODO implement me
-	panic("implement me")
+func (s *AtaDriverHandle) Close() {
+	_ = windows.CloseHandle(s.handle)
 }
 
-func (s AtaDriverHandle) Close() {
-	//TODO implement me
-	panic("implement me")
+func (s *AtaDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
+	return s.d.doTaskFileCmd(s.handle, rw, dma, tf, data, timeoutSecs)
 }

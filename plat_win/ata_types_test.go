@@ -1,4 +1,4 @@
-package windows
+package plat_win
 
 import (
 	"github.com/jc-lab/go-dparm/internal"

@@ -1,4 +1,4 @@
-package windows
+package plat_win
 
 type CDB10 struct {
 	OperationCode     uint8

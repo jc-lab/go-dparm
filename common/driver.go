@@ -1,5 +1,9 @@
 package common
 
+import (
+	"github.com/jc-lab/go-dparm/ata"
+)
+
 //TODO: DRIVER interface
 
 type WindowsPhysicalDrive struct {
@@ -11,20 +15,22 @@ type WindowsPhysicalDrive struct {
 type DrivingType int
 
 const (
-	kDrivingUnknown DrivingType = 0 + iota
-	kDrivingAtapi
-	kDrivingNvme
+	DrivingUnknown DrivingType = 0 + iota
+	DrivingAtapi
+	DrivingNvme
 )
 
 type DriverHandle interface {
 	GetDriverName() string
-	MergeDriveInfo(data DriveInfo)
 	GetDrivingType() DrivingType
 	ReopenWritable() error
 	Close()
 }
 
-type Driver interface {
-	OpenByPath(path string) (DriverHandle, error)
-	OpenByWindowsPhysicalDrive(path *WindowsPhysicalDrive) (DriverHandle, error)
+type AtaDriverHandle interface {
+	doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error
+}
+
+type NvmeDriverHandle interface {
+	GetNvmeIdentity() []byte
 }

@@ -1,10 +1,9 @@
 //go:build windows
 // +build windows
 
-package windows
+package plat_win
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/jc-lab/go-dparm/ata"
 	"github.com/jc-lab/go-dparm/common"
@@ -21,10 +20,12 @@ const (
 )
 
 type ScsiDriver struct {
-	common.Driver
+	WinDriver
 }
 
 type ScsiDriverHandle struct {
+	common.AtaDriverHandle
+	d      *ScsiDriver
 	handle windows.Handle
 }
 
@@ -32,37 +33,12 @@ func NewScsiDriver() *ScsiDriver {
 	return &ScsiDriver{}
 }
 
-func (d *ScsiDriver) OpenByPath(path string) (common.DriveHandle, error) {
-	handle, err := openDevice(path)
-	if err != nil {
-		return nil, err
-	}
-
+func (d *ScsiDriver) OpenByHandle(handle windows.Handle) (common.DriverHandle, error) {
 	driverHandle, err := d.openImpl(handle)
-	if err != nil {
-		_ = windows.CloseHandle(handle)
-	}
 	return driverHandle, err
 }
 
-func (d *ScsiDriver) OpenByWindowsPhysicalDrive(path *common.WindowsPhysicalDrive) (common.DriveHandle, error) {
-	handle, err := openDevice(path.PhysicalDiskPath)
-	if err != nil {
-		return nil, err
-	}
-
-	driverHandle, err := d.openImpl(handle)
-	if err != nil {
-		_ = windows.CloseHandle(handle)
-	}
-	return driverHandle, err
-}
-
-func (d *ScsiDriver) openImpl(handle windows.Handle) (common.DriveHandle, error) {
-	driverHandle := &ScsiDriverHandle{
-		handle: handle,
-	}
-
+func (d *ScsiDriver) openImpl(handle windows.Handle) (*ScsiDriverHandle, error) {
 	tf := &ata.Tf{
 		Command: ATA_IDENTIFY_DEVICE,
 	}
@@ -74,8 +50,7 @@ func (d *ScsiDriver) openImpl(handle windows.Handle) (common.DriveHandle, error)
 	}
 
 	dataBuffer := internal.NewAlignedBuffer(512, dataSize)
-	if err := d.doTaskFileCmd(driverHandle.handle, false, false, tf, dataBuffer.GetBuffer(), 3); err != nil {
-		println(err.Error())
+	if err := d.doTaskFileCmd(handle, false, false, tf, dataBuffer.GetBuffer(), 3); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +59,10 @@ func (d *ScsiDriver) openImpl(handle windows.Handle) (common.DriveHandle, error)
 		return nil, err
 	}
 
-	return driverHandle, nil
+	return &ScsiDriverHandle{
+		d:      d,
+		handle: handle,
+	}, nil
 }
 
 func (d *ScsiDriver) doTaskFileCmd(handle windows.Handle, rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
@@ -178,9 +156,6 @@ func (d *ScsiDriver) doTaskFileCmd(handle windows.Handle, rw bool, dma bool, tf 
 				scsiParams.DataBuffer = uintptr(unsafe.Pointer(alignedBuffer.GetPointer()))
 			}
 
-			srcScsiParams := unsafe.Slice((*byte)(unsafe.Pointer(&scsiParams)), unsafe.Sizeof(scsiParams))
-			println("DUMP 2: ", hex.EncodeToString(srcScsiParams))
-
 			if err := windows.DeviceIoControl(
 				handle,
 				IOCTL_SCSI_PASS_THROUGH_DIRECT,
@@ -219,7 +194,6 @@ func (d *ScsiDriver) doTaskFileCmd(handle windows.Handle, rw bool, dma bool, tf 
 			); err != nil {
 				rootError = err
 			} else {
-				println("OUTPUT: ", hex.EncodeToString(buffer))
 				rootError = nil
 				copyToPointer(unsafe.Pointer(&scsiParams), buffer[:], int(unsafe.Sizeof(scsiParams)))
 				if !rw {
@@ -248,27 +222,22 @@ func (d *ScsiDriver) doTaskFileCmd(handle windows.Handle, rw bool, dma bool, tf 
 	return rootError
 }
 
-func (s ScsiDriverHandle) GetDriverName() string {
-	//TODO implement me
-	panic("implement me")
+func (s *ScsiDriverHandle) GetDriverName() string {
+	return "WindowsScsiDriver"
 }
 
-func (s ScsiDriverHandle) MergeDriveInfo(data common.DriveInfo) {
-	//TODO implement me
-	panic("implement me")
+func (s *ScsiDriverHandle) GetDrivingType() common.DrivingType {
+	return common.DrivingAtapi
 }
 
-func (s ScsiDriverHandle) GetDrivingType() common.DrivingType {
-	//TODO implement me
-	panic("implement me")
+func (s *ScsiDriverHandle) ReopenWritable() error {
+	return nil
 }
 
-func (s ScsiDriverHandle) ReopenWritable() error {
-	//TODO implement me
-	panic("implement me")
+func (s *ScsiDriverHandle) Close() {
+	_ = windows.CloseHandle(s.handle)
 }
 
-func (s ScsiDriverHandle) Close() {
-	//TODO implement me
-	panic("implement me")
+func (s *ScsiDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
+	return s.d.doTaskFileCmd(s.handle, rw, dma, tf, data, timeoutSecs)
 }

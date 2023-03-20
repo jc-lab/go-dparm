@@ -1,4 +1,4 @@
-package windows
+package plat_win
 
 type ATA_PASS_THROUGH_DIRECT struct {
 	Length             uint16   `struc:"uint16"`

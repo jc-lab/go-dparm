@@ -2,15 +2,12 @@ package main
 
 import (
 	"github.com/jc-lab/go-dparm"
-	"github.com/jc-lab/go-dparm/windows"
 	"log"
 )
 
 func main() {
 	factory := go_dparm.NewSystemDriveFactory()
-
-	scsiDriver := windows.NewScsiDriver()
-	handle, err := scsiDriver.OpenByPath("\\\\.\\PhysicalDrive0")
+	handle, err := factory.OpenByPath("\\\\.\\PhysicalDrive0")
 	if err != nil {
 		log.Println(err)
 	} else {

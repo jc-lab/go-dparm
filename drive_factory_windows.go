@@ -6,20 +6,22 @@ package go_dparm
 import (
 	"errors"
 	"github.com/jc-lab/go-dparm/common"
+	"github.com/jc-lab/go-dparm/plat_win"
+	"golang.org/x/sys/windows"
 )
 
 type WindowsDriveFactory struct {
-	drivers []common.Driver
+	drivers []plat_win.WinDriver
 }
 
 func NewWindowsDriveFactory() *WindowsDriveFactory {
 	factory := &WindowsDriveFactory{}
-	factory.drivers = []common.Driver{
-		//windows.NewNvmeWinDriver(),
+	factory.drivers = []plat_win.WinDriver{
+		plat_win.NewNvmeWinDriver(),
 		//windows.NewSamsungNvmeDriver(),
-		//windows.NewWindowsNvmeDriver(),
-		//windows.NewScsiDriver(),
-		//windows.NewAtaDriver(),
+		plat_win.NewWindowsNvmeDriver(),
+		plat_win.NewScsiDriver(),
+		plat_win.NewAtaDriver(),
 	}
 	return factory
 }
@@ -29,7 +31,21 @@ func NewSystemDriveFactory() DriveFactory {
 }
 
 func (f *WindowsDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
-	return nil, errors.New("Not supoported yet")
+	handle, err := plat_win.OpenDevice(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, driver := range f.drivers {
+		driverHandle, err := driver.OpenByHandle(handle)
+		if err == nil {
+			return driverHandle, nil
+		}
+	}
+
+	_ = windows.CloseHandle(handle)
+
+	return nil, errors.New("Not supported device")
 }
 
 func (f *WindowsDriveFactory) EnumDrives() ([]EnumDriveItem, error) {

@@ -1,4 +1,4 @@
-package windows
+package plat_win
 
 type SCSI_PASS_THROUGH_DIRECT struct {
 	Length             uint16   `struc:"uint16"`
@@ -43,6 +43,14 @@ func (p *SCSI_SECURITY_PROTOCOL) SetInc512(v bool) {
 	} else {
 		p.B04 &= ^byte(0x80)
 	}
+}
+
+type SCSI_ADDRESS struct {
+	Length     uint32
+	PortNumber uint8
+	PathId     uint8
+	TargetId   uint8
+	Lun        uint8
 }
 
 const (
