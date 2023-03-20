@@ -19,6 +19,10 @@ type AlignedBuffer struct {
 	readerPos int
 }
 
+func IsAlignedPointer(align int, pointer uintptr) bool {
+	return (pointer % uintptr(align)) > 0
+}
+
 func NewAlignedBuffer(align int, size int) *AlignedBuffer {
 	allocateSize := align + size
 	b := &AlignedBuffer{
@@ -43,6 +47,10 @@ func NewAlignedBuffer(align int, size int) *AlignedBuffer {
 
 func (b *AlignedBuffer) GetPointer() *byte {
 	return b.pointer
+}
+
+func (b *AlignedBuffer) GetBuffer() []byte {
+	return b.refBuf
 }
 
 func (b *AlignedBuffer) GetCapacity() int {
@@ -72,7 +80,7 @@ func (b *AlignedBuffer) Write(p []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 
-	copy(p, b.refBuf[b.writerPos:b.writerPos+available])
+	copy(b.refBuf[b.writerPos:b.writerPos+available], p)
 	b.writerPos += available
 
 	return available, nil
@@ -88,7 +96,7 @@ func (b *AlignedBuffer) Read(p []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 
-	copy(b.refBuf[b.readerPos:b.readerPos+available], p)
+	copy(p, b.refBuf[b.readerPos:b.readerPos+available])
 	b.readerPos += available
 
 	return available, nil

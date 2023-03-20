@@ -1,5 +1,13 @@
 package scsi
 
+const (
+	SENSE_ILLEGAL_REQUEST = 0x5
+)
+
+const (
+	ErrIllegalRequestMsg = "illegal SCSI request"
+)
+
 type SENSE_DATA struct {
 	B00                          uint8    `struc:"uint8"`
 	SegmentNumber                uint8    `struc:"uint8"`
@@ -13,6 +21,8 @@ type SENSE_DATA struct {
 	SenseKeySpecific             [3]uint8 `struc:"[3]uint8"`
 }
 
+const SENSE_DATA_SIZE = 18
+
 func (s *SENSE_DATA) GetErrorCode() uint8 {
 	return s.B00 & 0x7F
 }
@@ -22,7 +32,7 @@ func (s *SENSE_DATA) IsValid() bool {
 }
 
 func (s *SENSE_DATA) GetSenseKey() uint8 {
-	return s.B02 & 0xF0
+	return s.B02 & 0x0F
 }
 
 func (s *SENSE_DATA) IsIncorrectLength() bool {
@@ -30,7 +40,7 @@ func (s *SENSE_DATA) IsIncorrectLength() bool {
 }
 
 func (s *SENSE_DATA) IsEndOfMedia() bool {
-	return (s.B02 & 0x60) != 0
+	return (s.B02 & 0x40) != 0
 }
 
 func (s *SENSE_DATA) IsFileMark() bool {

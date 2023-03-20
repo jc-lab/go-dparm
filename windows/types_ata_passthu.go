@@ -1,5 +1,35 @@
 package windows
 
+const (
+	ATA_PASSTHROUGH     = 0xa1
+	ATA_TRUSTED_RCV     = 0x5c
+	ATA_TRUSTED_SND     = 0x5e
+	ATA_IDENTIFY_DEVICE = 0xec
+
+	SCSI_INQUIRY          = 0x12
+	SCSI_MODE_SENSE_6     = 0x1a
+	SCSI_READ_CAPACITY_10 = 0x25
+	SCSI_ATA_PASSTHRU_16  = 0x85
+	SCSI_SECURITY_IN      = 0xa2
+	SCSI_SECURITY_OUT     = 0xb5
+)
+
+const (
+	HARD_RESET                  = 0
+	SRST                        = 1
+	NON_DATA                    = 3
+	PIO_DATA_IN                 = 4
+	PIO_DATA_OUT                = 5
+	DMA                         = 6
+	DMA_QUEUED                  = 7
+	DEVICE_DIAGNOSTIC           = 8
+	DEVICE_RESET                = 9
+	UDMA_DATA_IN                = 10
+	UDMA_DATA_OUT               = 11
+	FPDMA                       = 12
+	RETURN_RESPONSE_INFORMATION = 15
+)
+
 type ATA_PASSTHROUGH12 struct {
 	OperationCode uint8
 	B01           uint8

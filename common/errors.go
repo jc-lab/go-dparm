@@ -6,5 +6,11 @@ import (
 
 type DparmError struct {
 	error
-	SenseData *scsi.SENSE_DATA
+	Message      string
+	DriverStatus byte
+	SenseData    *scsi.SENSE_DATA
+}
+
+func (e DparmError) Error() string {
+	return e.Message
 }

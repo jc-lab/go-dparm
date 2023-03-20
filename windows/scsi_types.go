@@ -1,15 +1,5 @@
 package windows
 
-import (
-	"github.com/jc-lab/go-dparm/scsi"
-	"unsafe"
-)
-
-const (
-	IOCTL_SCSI_PASS_THROUGH        = 0x4D004
-	IOCTL_SCSI_PASS_THROUGH_DIRECT = 0x4D014
-)
-
 type SCSI_PASS_THROUGH_DIRECT struct {
 	Length             uint16   `struc:"uint16"`
 	ScsiStatus         byte     `struc:"uint8"`
@@ -26,11 +16,10 @@ type SCSI_PASS_THROUGH_DIRECT struct {
 	Cdb                [16]byte `struc:"[16]uint8"`
 }
 
-const SIZE_OF_SCSI_PASS_THROUGH_DIRECT = unsafe.Sizeof(SCSI_PASS_THROUGH_DIRECT{})
-
 type SCSI_PASS_THROUGH_DIRECT_WITH_SENSE_BUF struct {
 	SCSI_PASS_THROUGH_DIRECT
-	SenseInfo scsi.SENSE_DATA
+	Filter    uint32 // realign buffers to double word boundary
+	SenseData [32]byte
 }
 
 type SCSI_SECURITY_PROTOCOL struct {
