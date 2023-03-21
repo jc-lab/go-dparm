@@ -3,9 +3,17 @@
 
 package go_dparm
 
-import "github.com/jc-lab/go-dparm/common"
+import (
+	"errors"
+
+	"golang.org/x/sys/unix"
+
+	"github.com/jc-lab/go-dparm/common"
+	"github.com/jc-lab/go-dparm/plat_linux"
+)
 
 type LinuxDriveFactory struct {
+	drivers []plat_linux.LinuxDriver
 }
 
 func NewLinuxDriveFactory() *LinuxDriveFactory {
@@ -18,17 +26,28 @@ func NewSystemDriveFactory() common.DriveFactory {
 	return NewLinuxDriveFactory()
 }
 
-func (l LinuxDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
-	//TODO implement me
-	panic("implement me")
+func (f *LinuxDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
+	handle, err := plat_linux.OpenDevice(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, driver := range f.drivers {
+		driverHandle, err := driver.OpenByHandle(handle)
+		if err != nil {
+			return driverHandle, nil 
+		}
+	}
+
+	_ = unix.Close(handle)
+
+	return nil, errors.New("not supported device")
 }
 
-func (l LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
-	//TODO implement me
-	panic("implement me")
+func (f *LinuxDriveFactory) EnumDrives() ([]EnumDriveItem, error) {
+	return nil, nil // not implmented
 }
 
-func (l LinuxDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
-	//TODO implement me
-	panic("implement me")
+func (f *LinuxDriveFactory) EnumVolumes() ([]EnumVolumeItem, error) {
+	return nil, nil
 }
