@@ -2,14 +2,13 @@ package go_dparm
 
 import "github.com/jc-lab/go-dparm/common"
 
-type EnumDriveItem interface {
-}
-
-type EnumVolumeItem interface {
+type EnumVolumeContext interface {
+	GetList() []common.VolumeInfo
+	FindVolumesByDrive(driveInfo *common.DriveInfo) []common.VolumeInfo
 }
 
 type DriveFactory interface {
-	OpenByPath(path string) (common.DriveHandle, error)
-	EnumDrives() ([]EnumDriveItem, error)
-	EnumVolumes() ([]EnumVolumeItem, error)
+	OpenByPath(path string) (DriveHandle, error)
+	EnumDrives() ([]common.DriveInfo, error)
+	EnumVolumes() (EnumVolumeContext, error)
 }

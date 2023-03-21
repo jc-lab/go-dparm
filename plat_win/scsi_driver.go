@@ -25,8 +25,9 @@ type ScsiDriver struct {
 
 type ScsiDriverHandle struct {
 	common.AtaDriverHandle
-	d      *ScsiDriver
-	handle windows.Handle
+	d        *ScsiDriver
+	handle   windows.Handle
+	identity ata.IdentityDeviceData
 }
 
 func NewScsiDriver() *ScsiDriver {
@@ -43,26 +44,23 @@ func (d *ScsiDriver) openImpl(handle windows.Handle) (*ScsiDriverHandle, error) 
 		Command: ATA_IDENTIFY_DEVICE,
 	}
 	//tf.Lob.Nsect = 1
-	identity := &ata.IdentityDeviceData{}
-	dataSize, err := struc.Sizeof(identity)
-	if err != nil {
-		return nil, err
-	}
 
-	dataBuffer := internal.NewAlignedBuffer(512, dataSize)
+	dataBuffer := internal.NewAlignedBuffer(512, 512)
 	if err := d.doTaskFileCmd(handle, false, false, tf, dataBuffer.GetBuffer(), 3); err != nil {
 		return nil, err
 	}
 
+	driverHandle := &ScsiDriverHandle{
+		d:      d,
+		handle: handle,
+	}
+
 	dataBuffer.ResetRead()
-	if err := struc.Unpack(dataBuffer, &identity); err != nil {
+	if err := struc.Unpack(dataBuffer, &driverHandle.identity); err != nil {
 		return nil, err
 	}
 
-	return &ScsiDriverHandle{
-		d:      d,
-		handle: handle,
-	}, nil
+	return driverHandle, nil
 }
 
 func (d *ScsiDriver) doTaskFileCmd(handle windows.Handle, rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
@@ -236,6 +234,10 @@ func (s *ScsiDriverHandle) ReopenWritable() error {
 
 func (s *ScsiDriverHandle) Close() {
 	_ = windows.CloseHandle(s.handle)
+}
+
+func (s *ScsiDriverHandle) GetIdentity() *ata.IdentityDeviceData {
+	return &s.identity
 }
 
 func (s *ScsiDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {

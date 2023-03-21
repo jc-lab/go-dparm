@@ -85,3 +85,31 @@ func TfInit(tf Tf, op OpCode, lba uint64, nsect uint) {
 		tf.Dev |= uint8((lba >> 24) & 0x0f)
 	}
 }
+
+func FixAtaStringOrder(data []byte, trimRight bool) []byte {
+	out := make([]byte, len(data))
+	outLen := 0
+
+	for i := 0; i < len(data); i += 2 {
+		out[i] = data[i+1]
+		out[i+1] = data[i]
+		if out[i] != 0 {
+			outLen++
+		} else {
+			break
+		}
+		if out[i+1] != 0 {
+			outLen++
+		} else {
+			break
+		}
+	}
+
+	if trimRight {
+		for (outLen > 0) && (out[outLen-1] == 0x20) {
+			outLen--
+		}
+	}
+
+	return out[:outLen]
+}

@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/jc-lab/go-dparm/ata"
+	"github.com/jc-lab/go-dparm/nvme"
 )
 
 //TODO: DRIVER interface
@@ -28,9 +29,10 @@ type DriverHandle interface {
 }
 
 type AtaDriverHandle interface {
-	doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error
+	GetIdentity() *ata.IdentityDeviceData
+	DoTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error
 }
 
 type NvmeDriverHandle interface {
-	GetNvmeIdentity() []byte
+	GetIdentity() *nvme.IdentifyController
 }

@@ -7,7 +7,7 @@ import (
 
 func main() {
 	factory := go_dparm.NewSystemDriveFactory()
-	handle, err := factory.OpenByPath("\\\\.\\PhysicalDrive0")
+	handle, err := factory.OpenByPath("\\\\.\\PhysicalDrive1")
 	if err != nil {
 		log.Println(err)
 	} else {
@@ -27,7 +27,7 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	} else {
-		for i, drive := range volumes {
+		for i, drive := range volumes.GetList() {
 			log.Printf("VOLUME[%d]: %s", i, drive)
 		}
 	}

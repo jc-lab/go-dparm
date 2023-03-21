@@ -6,6 +6,7 @@ package plat_win
 import (
 	"fmt"
 	"github.com/jc-lab/go-dparm/common"
+	"github.com/jc-lab/go-dparm/nvme"
 	"golang.org/x/sys/windows"
 	"unsafe"
 )
@@ -23,7 +24,7 @@ type NvmeWinDriverHandle struct {
 	common.NvmeDriverHandle
 	handle     windows.Handle
 	scsiHandle windows.Handle
-	identity   []byte
+	identity   nvme.IdentifyController
 }
 
 func NewNvmeWinDriver() *NvmeWinDriver {
@@ -110,11 +111,13 @@ func (d *NvmeWinDriver) openImpl(handle windows.Handle) (*NvmeWinDriverHandle, e
 		return nil, err
 	}
 
-	return &NvmeWinDriverHandle{
+	driverHandle := &NvmeWinDriverHandle{
 		handle:     handle,
 		scsiHandle: scsiHandle,
-		identity:   identity,
-	}, nil
+	}
+	copyToPointer(unsafe.Pointer(&driverHandle.identity), identity, int(unsafe.Sizeof(driverHandle.identity)))
+
+	return driverHandle, nil
 }
 
 func (s *NvmeWinDriverHandle) GetDriverName() string {
@@ -133,6 +136,6 @@ func (s *NvmeWinDriverHandle) Close() {
 	_ = windows.CloseHandle(s.handle)
 }
 
-func (s *NvmeWinDriverHandle) GetNvmeIdentity() []byte {
-	return s.identity
+func (s *NvmeWinDriverHandle) GetIdentity() *nvme.IdentifyController {
+	return &s.identity
 }

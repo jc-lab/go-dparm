@@ -32,8 +32,9 @@ type AtaDriver struct {
 
 type AtaDriverHandle struct {
 	common.AtaDriverHandle
-	d      *AtaDriver
-	handle windows.Handle
+	d        *AtaDriver
+	handle   windows.Handle
+	identity ata.IdentityDeviceData
 }
 
 func NewAtaDriver() *AtaDriver {
@@ -49,27 +50,24 @@ func (d *AtaDriver) openImpl(handle windows.Handle) (*AtaDriverHandle, error) {
 	tf := &ata.Tf{
 		Command: ATA_IDENTIFY_DEVICE,
 	}
-	tf.Lob.Nsect = 1
-	identity := &ata.IdentityDeviceData{}
-	dataSize, err := struc.Sizeof(identity)
-	if err != nil {
-		return nil, err
-	}
+	//tf.Lob.Nsect = 1
 
-	dataBuffer := internal.NewAlignedBuffer(512, dataSize)
+	dataBuffer := internal.NewAlignedBuffer(512, 512)
 	if err := d.doTaskFileCmd(handle, false, false, tf, dataBuffer.GetBuffer(), 10); err != nil {
 		return nil, err
 	}
 
+	driverHandle := &AtaDriverHandle{
+		d:      d,
+		handle: handle,
+	}
+
 	dataBuffer.ResetRead()
-	if err := struc.Unpack(dataBuffer, &identity); err != nil {
+	if err := struc.Unpack(dataBuffer, &driverHandle.identity); err != nil {
 		return nil, err
 	}
 
-	return &AtaDriverHandle{
-		d:      d,
-		handle: handle,
-	}, nil
+	return driverHandle, nil
 }
 
 func (d *AtaDriver) doTaskFileCmd(handle windows.Handle, rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
@@ -198,6 +196,10 @@ func (s *AtaDriverHandle) ReopenWritable() error {
 
 func (s *AtaDriverHandle) Close() {
 	_ = windows.CloseHandle(s.handle)
+}
+
+func (s *AtaDriverHandle) GetIdentity() *ata.IdentityDeviceData {
+	return &s.identity
 }
 
 func (s *AtaDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {

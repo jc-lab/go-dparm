@@ -195,11 +195,21 @@ type IdentityCommandSetSupport struct {
 	B uint16 `struc:"uint16"`
 	C uint16 `struc:"uint16"`
 }
+
+func (p *IdentityCommandSetSupport) GetSmartCommands() bool {
+	return (p.A & 0x0001) != 0
+}
+
 type IdentityCommandSetActive struct {
 	A uint16 `struc:"uint16"`
 	B uint16 `struc:"uint16"`
 	C uint16 `struc:"uint16"`
 }
+
+func (p *IdentityCommandSetActive) GetSmartCommands() bool {
+	return (p.A & 0x0001) != 0
+}
+
 type IdentityNormalSecurityEraseUnit struct {
 	A uint16 `struc:"uint16"`
 }
