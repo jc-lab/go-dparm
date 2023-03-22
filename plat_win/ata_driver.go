@@ -4,6 +4,7 @@
 package plat_win
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jc-lab/go-dparm/ata"
 	"github.com/jc-lab/go-dparm/common"
@@ -200,6 +201,10 @@ func (s *AtaDriverHandle) GetIdentity() []byte {
 	return s.identity[:]
 }
 
-func (s *AtaDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
+func (s *AtaDriverHandle) DoTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
 	return s.d.doTaskFileCmd(s.handle, rw, dma, tf, data, timeoutSecs)
+}
+
+func (s *AtaDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
+	return errors.New("Not supported")
 }

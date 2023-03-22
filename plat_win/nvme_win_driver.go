@@ -143,3 +143,11 @@ func (s *NvmeWinDriverHandle) Close() {
 func (s *NvmeWinDriverHandle) GetIdentity() []byte {
 	return s.identity
 }
+
+func (s *NvmeWinDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {
+	return nil, errors.New("Not supported")
+}
+
+func (s *NvmeWinDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
+	return errors.New("Not supported")
+}

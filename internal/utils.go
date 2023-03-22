@@ -35,3 +35,11 @@ func AtaSwapWordEndian(input []byte) {
 		input[i+1] = a
 	}
 }
+
+func AtaSwap16(x uint16) uint16 {
+	return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8)
+}
+
+func AtaSwap32(x uint32) uint32 {
+	return (((x) & 0x000000ff) << 24) | (((x) & 0x0000ff00) << 8) | (((x) & 0x00ff0000) >> 8) | (((x) & 0xff000000) >> 24)
+}

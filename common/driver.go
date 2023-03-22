@@ -25,6 +25,8 @@ type DriverHandle interface {
 	GetDrivingType() DrivingType
 	ReopenWritable() error
 	Close()
+
+	SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error
 }
 
 type AtaDriverHandle interface {
@@ -34,4 +36,5 @@ type AtaDriverHandle interface {
 
 type NvmeDriverHandle interface {
 	GetIdentity() []byte
+	NvmeGetLogPage(nsid uint32, logId uint32, rae bool, size int) ([]byte, error)
 }

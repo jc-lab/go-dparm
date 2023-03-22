@@ -43,4 +43,16 @@ type DriveInfo struct {
 	IsSsd          bool
 	SsdCheckWeight int
 	TotalCapacity  int64
+
+	TcgSupport           int
+	TcgTper              bool
+	TcgLocking           bool
+	TcgGeometryReporting bool
+	TcgOpalSscV100       bool
+	TcgOpalSscV200       bool
+	TcgEnterprise        bool
+	TcgSingleUser        bool
+	TcgDataStore         bool
+
+	TcgRawFeatures map[uint16][]byte
 }

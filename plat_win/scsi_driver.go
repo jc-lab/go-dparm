@@ -239,6 +239,128 @@ func (s *ScsiDriverHandle) GetIdentity() []byte {
 	return s.identity[:]
 }
 
-func (s *ScsiDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
+func (s *ScsiDriverHandle) DoTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
 	return s.d.doTaskFileCmd(s.handle, rw, dma, tf, data, timeoutSecs)
+}
+func (s *ScsiDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
+	return scsiSecurityCommand(s.handle, rw, dma, protocol, comId, buffer, timeoutSecs)
+}
+
+func scsiSecurityCommand(handle windows.Handle, rw bool, dma bool, protocol uint8, comId uint16, data []byte, timeoutSecs int) error {
+	var rootError error = nil
+
+	if rw && data != nil {
+		for i := range data {
+			data[i] = 0
+		}
+	}
+
+	scsiParams := SCSI_PASS_THROUGH_DIRECT_WITH_SENSE_BUF{}
+
+	for retry := 0; retry < 2; retry++ {
+		scsiParams.Length = uint16(unsafe.Sizeof(SCSI_PASS_THROUGH_DIRECT{}))
+		scsiParams.TimeOutValue = uint32(timeoutSecs)
+		scsiParams.DataIn = internal.Ternary(rw, SCSI_IOCTL_DATA_OUT, SCSI_IOCTL_DATA_IN)
+		scsiParams.SenseInfoLength = byte(unsafe.Sizeof(scsiParams.SenseData))
+		scsiParams.SenseInfoOffset = uint32(unsafe.Offsetof(scsiParams.SenseData))
+
+		cdb := &SCSI_SECURITY_PROTOCOL{}
+		if rw {
+			cdb.OperationCode = SCSIOP_SECURITY_PROTOCOL_OUT
+		} else {
+			cdb.OperationCode = SCSIOP_SECURITY_PROTOCOL_IN
+		}
+		cdb.Protocol = protocol
+		cdb.ProtocolSp = comId
+		cdb.Length = uint32(len(data))
+
+		sizeOfCdb, err := struc.Sizeof(cdb)
+		if err != nil {
+			return err
+		}
+
+		scsiParams.CdbLength = byte(sizeOfCdb)
+		scsiParams.DataTransferLength = uint32(len(data))
+
+		if err := struc.Pack(internal.NewWrappedBuffer(scsiParams.Cdb[:]), cdb); err != nil {
+			return err
+		}
+
+		var bytesReturned uint32
+		if retry == 0 {
+			var alignedBuffer *internal.AlignedBuffer = nil
+			scsiParams.DataBuffer = uintptr(unsafe.Pointer(&data[0]))
+			if !internal.IsAlignedPointer(512, scsiParams.DataBuffer) {
+				alignedBuffer = internal.NewAlignedBuffer(512, len(data))
+				if rw {
+					alignedBuffer.ResetWrite()
+					alignedBuffer.Write(data)
+				}
+				scsiParams.DataBuffer = uintptr(unsafe.Pointer(alignedBuffer.GetPointer()))
+			}
+
+			if err := windows.DeviceIoControl(
+				handle,
+				IOCTL_SCSI_PASS_THROUGH_DIRECT,
+				(*byte)(unsafe.Pointer(&scsiParams)),
+				uint32(unsafe.Sizeof(scsiParams)),
+				(*byte)(unsafe.Pointer(&scsiParams)),
+				uint32(unsafe.Sizeof(scsiParams)),
+				&bytesReturned,
+				nil,
+			); err != nil {
+				rootError = err
+			} else {
+				if !rw && alignedBuffer != nil {
+					alignedBuffer.ResetRead()
+					alignedBuffer.Read(data)
+				}
+				break
+			}
+		} else {
+			n := int(unsafe.Sizeof(scsiParams))
+			scsiParams.DataBuffer = uintptr(n)
+
+			buffer := make([]byte, n+len(data))
+			copyFromPointer(buffer, unsafe.Pointer(&scsiParams), int(unsafe.Sizeof(scsiParams)))
+			copy(buffer[n:], data)
+
+			if err := windows.DeviceIoControl(
+				handle,
+				IOCTL_SCSI_PASS_THROUGH,
+				&buffer[0],
+				uint32(len(buffer)),
+				&buffer[0],
+				uint32(len(buffer)),
+				&bytesReturned,
+				nil,
+			); err != nil {
+				rootError = err
+			} else {
+				rootError = nil
+				copyToPointer(unsafe.Pointer(&scsiParams), buffer[:], int(unsafe.Sizeof(scsiParams)))
+				if !rw {
+					copy(data, buffer[n:])
+				}
+			}
+		}
+	}
+
+	var senseInfo scsi.SENSE_DATA
+	copyToPointer(unsafe.Pointer(&senseInfo), scsiParams.SenseData[:], int(unsafe.Sizeof(senseInfo)))
+
+	if rootError == nil {
+		// ?? if scsiParams.SenseInfo.IsValid() && scsiParams.SenseInfo.GetSenseKey() != 0
+		if senseInfo.GetSenseKey() != 0 {
+			return &common.DparmError{
+				DriverStatus: scsiParams.ScsiStatus,
+				Message: fmt.Sprintf("SCSI Status: %02x, Sense Key: %#02x, ASC: %#02x, ASCQ: %#02x",
+					scsiParams.ScsiStatus,
+					senseInfo.GetSenseKey(), senseInfo.AdditionalSenseCode, senseInfo.AdditionalSenseCodeQualifier),
+				SenseData: &senseInfo,
+			}
+		}
+	}
+
+	return rootError
 }

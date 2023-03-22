@@ -125,3 +125,8 @@ type StorageQueryWithBuffer struct {
 	ProtocolSpecific STORAGE_PROTOCOL_SPECIFIC_DATA
 	Buffer           [4096]byte
 }
+
+type StorageQueryWithoutBuffer struct {
+	Query            STORAGE_PROPERTY_QUERY
+	ProtocolSpecific STORAGE_PROTOCOL_SPECIFIC_DATA
+}

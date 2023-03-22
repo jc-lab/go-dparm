@@ -23,14 +23,14 @@ type SCSI_PASS_THROUGH_DIRECT_WITH_SENSE_BUF struct {
 }
 
 type SCSI_SECURITY_PROTOCOL struct {
-	OperationCode uint8
-	Protocol      uint8
-	ProtocolSp    uint16
-	B04           uint8
-	B05           uint8
-	Length        uint32
-	B10           uint8
-	Control       uint8
+	OperationCode uint8  `struc:"uint8"`
+	Protocol      uint8  `struc:"uint8"`
+	ProtocolSp    uint16 `struc:"uint16,big"`
+	B04           uint8  `struc:"uint8"`
+	B05           uint8  `struc:"uint8"`
+	Length        uint32 `struc:"uint32,big"`
+	B10           uint8  `struc:"uint8"`
+	Control       uint8  `struc:"uint8"`
 }
 
 func (p *SCSI_SECURITY_PROTOCOL) IsInc512() bool {
