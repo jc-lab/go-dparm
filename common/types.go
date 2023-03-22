@@ -5,6 +5,14 @@ import (
 	"github.com/jc-lab/go-dparm/nvme"
 )
 
+type PartitionStyle int
+
+const (
+	PartitionStyleRaw PartitionStyle = 0 + iota
+	PartitionStyleMbr
+	PartitionStyleGpt
+)
+
 type VolumeInfo struct {
 	Path        string
 	Filesystem  string
@@ -15,6 +23,10 @@ type DriveInfo struct {
 	DevicePath  string
 	DrivingType DrivingType
 	DriverName  string
+
+	PartitionStyle   PartitionStyle
+	GptDiskId        string // uuid format
+	MbrDiskSignature uint32
 
 	Model            string
 	Serial           string

@@ -19,7 +19,7 @@ func main() {
 		log.Println(err)
 	} else {
 		for i, drive := range drives {
-			log.Printf("DRIVE[%d]: %s", i, drive)
+			log.Printf("DRIVE[%d]: %s", i, drive.Model)
 		}
 	}
 

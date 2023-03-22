@@ -247,6 +247,11 @@ type IdentityWord168 struct {
 type IdentityDataSetManagementFeature struct {
 	A uint16 `struc:"uint16"`
 }
+
+func (f *IdentityDataSetManagementFeature) GetTrim() bool {
+	return (f.A & 0x01) != 0
+}
+
 type IdentitySctSommandTransport struct {
 	A uint16 `struc:"uint16"`
 }

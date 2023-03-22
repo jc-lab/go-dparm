@@ -4,18 +4,25 @@
 package plat_win
 
 import (
+	"github.com/jc-lab/go-dparm/common"
 	"golang.org/x/sys/windows"
+	"strings"
+	"syscall"
 	"unsafe"
 )
 
 const (
 	IOCTL_STORAGE_GET_DEVICE_NUMBER  = 0x2d1080
 	IOCTL_DISK_GET_DRIVE_GEOMETRY_EX = 0x700a0
+	IOCTL_DISK_GET_DRIVE_LAYOUT_EX   = 0x00070050
 )
 
 type WinBasicInfo struct {
 	StorageDeviceNumber *STORAGE_DEVICE_NUMBER
 	DiskGeometryEx      *DISK_GEOMETRY_EX
+	PartitionStyle      common.PartitionStyle
+	MbrSignature        uint32
+	GptDiskId           string
 }
 
 func OpenDevice(path string) (windows.Handle, error) {
@@ -69,7 +76,41 @@ func ReadBasicInfo(handle windows.Handle) *WinBasicInfo {
 		result.DiskGeometryEx = &diskGeometryEx
 	}
 
+	data, err := readDeviceIoControl(handle, IOCTL_DISK_GET_DRIVE_LAYOUT_EX)
+	if err == nil {
+		header := (*DRIVE_LAYOUT_INFORMATION_EX_HEADER)(unsafe.Pointer(&data[0]))
+		next := data[int(unsafe.Sizeof(*header)):]
+		if header.PartitionStyle == PartitionStyleGpt {
+			info := (*DRIVE_LAYOUT_INFORMATION_GPT)(unsafe.Pointer(&next[0]))
+			result.PartitionStyle = common.PartitionStyleGpt
+			result.GptDiskId = info.DiskId.String()
+			result.GptDiskId = strings.Trim(result.GptDiskId, "{}")
+			result.GptDiskId = strings.ToLower(result.GptDiskId)
+		} else if header.PartitionStyle == PartitionStyleMbr {
+			info := (*DRIVE_LAYOUT_INFORMATION_MBR)(unsafe.Pointer(&next[0]))
+			result.PartitionStyle = common.PartitionStyleMbr
+			result.MbrSignature = info.Signature
+		}
+	}
+
 	return result
+}
+
+func readDeviceIoControl(handle windows.Handle, ioctl uint32) ([]byte, error) {
+	var bytesReturned uint32
+
+	buffer := make([]byte, 4096)
+	err := windows.DeviceIoControl(handle, ioctl, nil, 0, &buffer[0], uint32(len(buffer)), &bytesReturned, nil)
+	errno, ok := err.(syscall.Errno)
+	if ok && errno == windows.ERROR_INSUFFICIENT_BUFFER {
+		buffer = make([]byte, bytesReturned)
+		err = windows.DeviceIoControl(handle, ioctl, nil, 0, &buffer[0], uint32(len(buffer)), &bytesReturned, nil)
+	}
+	if err == nil {
+		return buffer[:bytesReturned], nil
+	}
+
+	return nil, errno
 }
 
 func copyToPointer(dest unsafe.Pointer, src []byte, len int) {
@@ -87,4 +128,19 @@ func copyFromAsciiToBuffer(dest []byte, text string) {
 	for i := 0; i < c; i++ {
 		dest[i] = text[i]
 	}
+}
+
+func zerofill(buf []uint16) {
+	for i := range buf {
+		buf[i] = 0
+	}
+}
+
+func wcslen(buf []uint16) int {
+	for i := 0; i < len(buf); i++ {
+		if buf[i] == 0 {
+			return i
+		}
+	}
+	return len(buf)
 }

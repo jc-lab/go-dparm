@@ -38,6 +38,9 @@ func (p *DriveHandleImpl) init() {
 		if identity.NominalMediaRotationRate == 0 || identity.NominalMediaRotationRate == 1 {
 			p.Info.SsdCheckWeight++
 		}
+		if identity.DataSetManagementFeature.GetTrim() {
+			p.Info.SsdCheckWeight++
+		}
 		p.Info.IsSsd = p.Info.SsdCheckWeight > 0
 		p.Info.AtaIdentity = ataDrive.GetIdentity()
 	}
