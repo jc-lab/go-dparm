@@ -20,3 +20,10 @@ func GetStrucOptions() *struc.Options {
 		PtrSize: Ternary(IS_64_BIT, 64, 32),
 	}
 }
+
+func GetStrucOptionsWithBigEndian() *struc.Options {
+	return &struc.Options{
+		Order:   binary.BigEndian,
+		PtrSize: Ternary(IS_64_BIT, 64, 32),
+	}
+}

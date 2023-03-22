@@ -63,7 +63,8 @@ func (d *AtaDriver) openImpl(handle windows.Handle) (*AtaDriverHandle, error) {
 	}
 
 	dataBuffer.ResetRead()
-	if err := struc.Unpack(dataBuffer, &driverHandle.identity); err != nil {
+	opts := internal.GetStrucOptions()
+	if err := struc.UnpackWithOptions(dataBuffer, &driverHandle.identity, opts); err != nil {
 		return nil, err
 	}
 

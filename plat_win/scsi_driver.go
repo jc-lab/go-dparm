@@ -56,7 +56,9 @@ func (d *ScsiDriver) openImpl(handle windows.Handle) (*ScsiDriverHandle, error) 
 	}
 
 	dataBuffer.ResetRead()
-	if err := struc.Unpack(dataBuffer, &driverHandle.identity); err != nil {
+
+	opts := internal.GetStrucOptionsWithBigEndian()
+	if err := struc.UnpackWithOptions(dataBuffer, &driverHandle.identity, opts); err != nil {
 		return nil, err
 	}
 
