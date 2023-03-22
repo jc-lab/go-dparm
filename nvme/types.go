@@ -292,29 +292,27 @@ type PassthruCmd64 struct {
 }
 
 type IdentifyPowerState struct {
-	MaxPower/* centiwatts */ uint16          `struc:"uint16"`
-	Rsvd2                             uint8  `struc:"uint8"`
-	Flags                             uint8  `struc:"uint8"`
-	EntryLat/* microseconds */ uint32        `struc:"uint32"`
-	ExitLat/* microseconds */ uint32         `struc:"uint32"`
-	Readput                           uint8  `struc:"uint8"`
-	ReadLat                           uint8  `struc:"uint8"`
-	Writeput                          uint8  `struc:"uint8"`
-	WriteLat                          uint8  `struc:"uint8"`
-	IdlePower                         uint16 `struc:"uint16"`
-	IdleScale                         uint8  `struc:"uint8"`
-	Rsvd19                            uint8  `struc:"uint8"`
-	ActivePower                       uint16 `struc:"uint16"`
-	ActiveWorkScale                   uint8  `struc:"uint8"`
-	Rsvd23                            uint8  `struc:"[9]uint8"`
+	MaxPower/* centiwatts */ uint16            `struc:"uint16"`
+	Rsvd2                             uint8    `struc:"uint8"`
+	Flags                             uint8    `struc:"uint8"`
+	EntryLat/* microseconds */ uint32          `struc:"uint32"`
+	ExitLat/* microseconds */ uint32           `struc:"uint32"`
+	Readput                           uint8    `struc:"uint8"`
+	ReadLat                           uint8    `struc:"uint8"`
+	Writeput                          uint8    `struc:"uint8"`
+	WriteLat                          uint8    `struc:"uint8"`
+	IdlePower                         uint16   `struc:"uint16"`
+	IdleScale                         uint8    `struc:"uint8"`
+	Rsvd19                            uint8    `struc:"uint8"`
+	ActivePower                       uint16   `struc:"uint16"`
+	ActiveWorkScale                   uint8    `struc:"uint8"`
+	Rsvd23                            [9]uint8 `struc:"[9]uint8"`
 }
 
 type IdentifyControllerVersion struct {
-	ver uint32 `struc:"uint32"`
-	//
-	//TertiaryVersion uint8 `struc:"uint8"`
-	//MinorVersion uint8 `struc:"uint8"`
-	//MajorVersion uint16 `struc:"uint16"`
+	TertiaryVersion uint8  `struc:"uint8"`
+	MinorVersion    uint8  `struc:"uint8"`
+	MajorVersion    uint16 `struc:"uint16"`
 }
 
 type IdentifyController struct {
@@ -400,8 +398,8 @@ type IdentifyController struct {
 	Icdoff    uint16     `struc:"uint16"`
 	Ctrattr   uint8      `struc:"uint8"`
 	Msdbd     uint8      `struc:"uint8"`
-	Rsvd1804  [224]uint8 `struc:"[244]uint8"`
-	psd       [32]IdentifyPowerState
+	Rsvd1804  [244]uint8 `struc:"[244]uint8"`
+	Psd       [32]IdentifyPowerState
 	Vs        [1024]uint8 `struc:"[1024]uint8"`
 }
 
@@ -427,26 +425,26 @@ type SanitizeLogPage struct {
  * 5.14.1.2 SMART/Health Information (Log Identifier 02h)
  */
 type SmartLogPage struct {
-	CriticalWarning                           uint8  `struc:"uint8"`
-	Compositeemperature                       uint16 `struc:"uint16"`
-	AvailableSpare                            uint8  `struc:"uint8"`
-	AvailableSparehreshold                    uint8  `struc:"uint8"`
-	PercentageUsed                            uint8  `struc:"uint8"`
-	Rev01                                     uint8  `struc:"[26]uint8"`
-	DataUnitsRead                             uint8  `struc:"[16]uint8"`
-	DataUnitsWritten                          uint8  `struc:"[16]uint8"`
-	HostReadCommands                          uint8  `struc:"[16]uint8"`
-	HostWriteCommands                         uint8  `struc:"[16]uint8"`
-	ControllerBusyime                         uint8  `struc:"[16]uint8"`
-	PowerCycles                               uint8  `struc:"[16]uint8"`
-	PowerOnHours                              uint8  `struc:"[16]uint8"`
-	UnsafeShutdowns                           uint8  `struc:"[16]uint8"`
-	MediaAndDataIntegrityErrors               uint8  `struc:"[16]uint8"`
-	NumberOfErrorInformationLogEntries        uint8  `struc:"[16]uint8"`
-	WarningCompositeemperatureime             uint8  `struc:"[4]uint8"`
-	CriticalCompositeemperatureime            uint8  `struc:"[4]uint8"`
-	TemperatureSensor                         uint16 `struc:"[8]uint16"`
-	ThermalManagementemperatureransitionCount uint32 `struc:"[2]uint32"`
-	TotalimeForhermalManagementemperature     uint32 `struc:"[2]uint32"`
-	RevRemaining                              uint8  `struc:"[280]uint8"`
+	CriticalWarning                           uint8      `struc:"uint8"`
+	Compositeemperature                       uint16     `struc:"uint16"`
+	AvailableSpare                            uint8      `struc:"uint8"`
+	AvailableSparehreshold                    uint8      `struc:"uint8"`
+	PercentageUsed                            uint8      `struc:"uint8"`
+	Rev01                                     [16]uint8  `struc:"[26]uint8"`
+	DataUnitsRead                             [16]uint8  `struc:"[16]uint8"`
+	DataUnitsWritten                          [16]uint8  `struc:"[16]uint8"`
+	HostReadCommands                          [16]uint8  `struc:"[16]uint8"`
+	HostWriteCommands                         [16]uint8  `struc:"[16]uint8"`
+	ControllerBusyime                         [16]uint8  `struc:"[16]uint8"`
+	PowerCycles                               [16]uint8  `struc:"[16]uint8"`
+	PowerOnHours                              [16]uint8  `struc:"[16]uint8"`
+	UnsafeShutdowns                           [16]uint8  `struc:"[16]uint8"`
+	MediaAndDataIntegrityErrors               [16]uint8  `struc:"[16]uint8"`
+	NumberOfErrorInformationLogEntries        [16]uint8  `struc:"[16]uint8"`
+	WarningCompositeemperatureime             [4]uint8   `struc:"[4]uint8"`
+	CriticalCompositeemperatureime            [4]uint8   `struc:"[4]uint8"`
+	TemperatureSensor                         [8]uint16  `struc:"[8]uint16"`
+	ThermalManagementemperatureransitionCount [2]uint32  `struc:"[2]uint32"`
+	TotalimeForhermalManagementemperature     [2]uint32  `struc:"[2]uint32"`
+	RevRemaining                              [280]uint8 `struc:"[280]uint8"`
 }

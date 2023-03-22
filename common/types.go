@@ -33,10 +33,12 @@ type DriveInfo struct {
 	FirmwareRevision string
 	RawSerial        [20]byte
 
-	WindowsDevNum int
-	SmartEnabled  bool
-	AtaIdentity   *ata.IdentityDeviceData
-	NvmeIdentity  *nvme.IdentifyController
+	WindowsDevNum   int
+	SmartEnabled    bool
+	AtaIdentity     *ata.IdentityDeviceData
+	AtaIdentityRaw  []byte
+	NvmeIdentity    *nvme.IdentifyController
+	NvmeIdentityRaw []byte
 
 	IsSsd          bool
 	SsdCheckWeight int

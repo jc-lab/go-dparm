@@ -27,7 +27,7 @@ type ScsiDriverHandle struct {
 	common.AtaDriverHandle
 	d        *ScsiDriver
 	handle   windows.Handle
-	identity ata.IdentityDeviceData
+	identity [512]byte
 }
 
 func NewScsiDriver() *ScsiDriver {
@@ -56,11 +56,8 @@ func (d *ScsiDriver) openImpl(handle windows.Handle) (*ScsiDriverHandle, error) 
 	}
 
 	dataBuffer.ResetRead()
-
-	opts := internal.GetStrucOptionsWithBigEndian()
-	if err := struc.UnpackWithOptions(dataBuffer, &driverHandle.identity, opts); err != nil {
-		return nil, err
-	}
+	dataBuffer.Read(driverHandle.identity[:])
+	internal.AtaSwapWordEndian(driverHandle.identity[:])
 
 	return driverHandle, nil
 }
@@ -238,8 +235,8 @@ func (s *ScsiDriverHandle) Close() {
 	_ = windows.CloseHandle(s.handle)
 }
 
-func (s *ScsiDriverHandle) GetIdentity() *ata.IdentityDeviceData {
-	return &s.identity
+func (s *ScsiDriverHandle) GetIdentity() []byte {
+	return s.identity[:]
 }
 
 func (s *ScsiDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {

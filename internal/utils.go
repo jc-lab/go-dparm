@@ -27,3 +27,11 @@ func GetStrucOptionsWithBigEndian() *struc.Options {
 		PtrSize: Ternary(IS_64_BIT, 64, 32),
 	}
 }
+
+func AtaSwapWordEndian(input []byte) {
+	for i := 0; i < len(input); i += 2 {
+		a := input[i]
+		input[i] = input[i+1]
+		input[i+1] = a
+	}
+}

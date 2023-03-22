@@ -3,6 +3,9 @@ package go_dparm
 import (
 	"github.com/jc-lab/go-dparm/ata"
 	"github.com/jc-lab/go-dparm/common"
+	"github.com/jc-lab/go-dparm/internal"
+	"github.com/jc-lab/go-dparm/nvme"
+	"github.com/lunixbochs/struc"
 	"strings"
 )
 
@@ -24,10 +27,18 @@ type DriveHandleImpl struct {
 	Info common.DriveInfo
 }
 
-func (p *DriveHandleImpl) init() {
+func (p *DriveHandleImpl) init() error {
 	ataDrive, ok := p.dh.(common.AtaDriverHandle)
 	if ok {
-		identity := ataDrive.GetIdentity()
+		identityRaw := ataDrive.GetIdentity()
+		p.Info.AtaIdentityRaw = identityRaw
+
+		identity := &ata.IdentityDeviceData{}
+		if err := struc.Unpack(internal.NewWrappedBuffer(identityRaw), identity); err != nil {
+			return err
+		}
+		p.Info.AtaIdentity = identity
+
 		p.Info.Model = strings.Trim(string(ata.FixAtaStringOrder(identity.ModelNumber[:], true)), trimSet)
 		p.Info.FirmwareRevision = strings.Trim(string(ata.FixAtaStringOrder(identity.FirmwareRevision[:], true)), trimSet)
 		rawSerial := ata.FixAtaStringOrder(identity.SerialNumber[:], false)
@@ -42,12 +53,19 @@ func (p *DriveHandleImpl) init() {
 			p.Info.SsdCheckWeight++
 		}
 		p.Info.IsSsd = p.Info.SsdCheckWeight > 0
-		p.Info.AtaIdentity = ataDrive.GetIdentity()
 	}
 
 	nvmeDrive, ok := p.dh.(common.NvmeDriverHandle)
 	if ok {
-		identity := nvmeDrive.GetIdentity()
+		identityRaw := nvmeDrive.GetIdentity()
+		p.Info.NvmeIdentityRaw = identityRaw
+
+		identity := &nvme.IdentifyController{}
+		if err := struc.Unpack(internal.NewWrappedBuffer(identityRaw), identity); err != nil {
+			return err
+		}
+		p.Info.NvmeIdentity = identity
+
 		p.Info.Model = strings.Trim(string(identity.Mn[:]), trimSet)
 		p.Info.FirmwareRevision = strings.Trim(string(identity.Fr[:]), trimSet)
 		copy(p.Info.RawSerial[:], identity.Sn[:])
@@ -55,8 +73,9 @@ func (p *DriveHandleImpl) init() {
 		p.Info.SmartEnabled = true
 		p.Info.IsSsd = true
 		p.Info.SsdCheckWeight = 0
-		p.Info.NvmeIdentity = identity
 	}
+
+	return nil
 }
 
 func (p *DriveHandleImpl) GetDriverHandle() common.DriverHandle {

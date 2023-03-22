@@ -8,7 +8,6 @@ import (
 	"github.com/jc-lab/go-dparm/ata"
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/internal"
-	"github.com/lunixbochs/struc"
 	"golang.org/x/sys/windows"
 	"unsafe"
 )
@@ -34,7 +33,7 @@ type AtaDriverHandle struct {
 	common.AtaDriverHandle
 	d        *AtaDriver
 	handle   windows.Handle
-	identity ata.IdentityDeviceData
+	identity [512]byte
 }
 
 func NewAtaDriver() *AtaDriver {
@@ -63,10 +62,8 @@ func (d *AtaDriver) openImpl(handle windows.Handle) (*AtaDriverHandle, error) {
 	}
 
 	dataBuffer.ResetRead()
-	opts := internal.GetStrucOptions()
-	if err := struc.UnpackWithOptions(dataBuffer, &driverHandle.identity, opts); err != nil {
-		return nil, err
-	}
+	dataBuffer.Read(driverHandle.identity[:])
+	internal.AtaSwapWordEndian(driverHandle.identity[:])
 
 	return driverHandle, nil
 }
@@ -199,8 +196,8 @@ func (s *AtaDriverHandle) Close() {
 	_ = windows.CloseHandle(s.handle)
 }
 
-func (s *AtaDriverHandle) GetIdentity() *ata.IdentityDeviceData {
-	return &s.identity
+func (s *AtaDriverHandle) GetIdentity() []byte {
+	return s.identity[:]
 }
 
 func (s *AtaDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
