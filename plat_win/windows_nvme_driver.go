@@ -168,3 +168,39 @@ func (s *WindowsNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae 
 func (s *WindowsNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
 	return scsiSecurityCommand(s.handle, rw, dma, protocol, comId, buffer, timeoutSecs)
 }
+
+func (s *WindowsNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {
+	headerSize := int(unsafe.Sizeof(StorageQueryWithoutBuffer{}))
+	nptwb := StorageQueryWithoutBuffer{}
+	buffer := make([]byte, headerSize+dataSize)
+
+	nptwb.Query.PropertyId = StorageAdapterProtocolSpecificProperty
+	nptwb.Query.QueryType = PropertyStandardQuery
+	nptwb.ProtocolSpecific.ProtocolType = ProtocolTypeNvme
+	nptwb.ProtocolSpecific.DataType = NVMeDataTypeLogPage
+	nptwb.ProtocolSpecific.ProtocolDataRequestValue = logId
+	nptwb.ProtocolSpecific.ProtocolDataRequestSubValue = 0
+	nptwb.ProtocolSpecific.ProtocolDataOffset = uint32(headerSize)
+	nptwb.ProtocolSpecific.ProtocolDataLength = uint32(dataSize)
+
+	var bytesReturned uint32
+	err := windows.DeviceIoControl(
+		s.handle,
+		IOCTL_STORAGE_QUERY_PROPERTY,
+		&buffer[0],
+		uint32(len(buffer)),
+		&buffer[0],
+		uint32(len(buffer)),
+		&bytesReturned,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer[headerSize:], nil
+}
+
+func (s *WindowsNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
+	return scsiSecurityCommand(s.handle, rw, dma, protocol, comId, buffer, timeoutSecs)
+}
