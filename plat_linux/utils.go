@@ -10,13 +10,7 @@ import (
 )
 
 func OpenDevice(path string) (int, error) {
-
-	dev, err := unix.Open(path, unix.O_RDWR, uint32(unix.S_IRUSR | unix.S_IWUSR | unix.S_IRGRP | unix.S_IWGRP))
-	if err != nil {
-		return dev, err
-	}
-
-	return dev, nil
+	return unix.Open(path, unix.O_RDWR | unix.O_NONBLOCK, uint32(unix.S_IRUSR | unix.S_IWUSR | unix.S_IRGRP | unix.S_IWGRP))
 }
 
 func copyToPointer(dest unsafe.Pointer, src []byte, len int) {

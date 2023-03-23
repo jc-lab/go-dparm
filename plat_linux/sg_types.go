@@ -1,36 +1,45 @@
 package plat_linux
 
-type SCSI_PASS_THROUGH_DIRECT struct {
-	Length             uint16   `struc:"uint16"`
-	ScsiStatus         byte     `struc:"uint8"`
-	PathId             byte     `struc:"uint8"`
-	TargetId           byte     `struc:"uint8"`
-	Lun                byte     `struc:"uint8"`
-	CdbLength          byte     `struc:"uint8"`
-	SenseInfoLength    byte     `struc:"uint8"`
-	DataIn             byte     `struc:"uint8"`
-	DataTransferLength uint32   `struc:"uint32"`
-	TimeOutValue       uint32   `struc:"uint32"`
-	DataBuffer         uintptr  `struc:"off_t"`
-	SenseInfoOffset    uint32   `struc:"uint32,offsetof=SenseInfo"`
-	Cdb                [16]byte `struc:"[16]uint8"`
+type SG_IO_HDR struct {
+	InterfaceID int32 `struc: "int32"` /* [i] 'S' for SCSI generic (required) */
+	DxferDirection int32 `struc: "int32"` /* [i] data transfer direction  */
+	CmdLen        uint8  `struc: "uint8"` /* [i] SCSI command length (<=16 bytes) */
+	MxSbLen       uint8  `struc: "uint8"` /* [i] max length to write to/from (<=65535) */
+	IovecCount    uint16 `struc: "uint16"` /* [i] 0 implies no scatter gather */
+	DxferLen      uint32 `struc: "uint32"` /* [i] byte count of data transfer */
+	Dxferp        uintptr `struc: "uintptr"` /* [i], [*io] points to data transfer memory or scatter gather list */
+	Cmdp          *byte `struc: "*byte"` /* [i], [*i] points to SCSI command to perform */
+	Sbp           *byte   `struc: "*byte"` /* [i], [*o] points to sense buffer memory */
+	Timeout       uint32 `struc: "uint32"` /* [i] MAX_UINT->no timeout (unit: millisec) */
+	Flags         uint32 `struc: "uint32"` /* [i] 0 -> default, see SG_FLAG... */
+	PackID        int32  `struc: "int32"` /* [i->o] unused internally (normally) */
+	UsrPtr        uintptr  `struc: "uintptr"` /* [i->o] unused internally */
+	Status        uint8  `struc: "uint8"` /* [o] scsi status */
+	MaskedStatus  uint8  `struc: "uint8"` /* [o] shifted, masked scsi status */
+	MsgStatus     uint8  `struc: "uint8"` /* [o] messaging level data (optional) */
+	SbLenWr       uint8  `struc: "uint8"` /* [o] byte count actually written to sbp */
+	HostStatus    uint16 `struc: "uint32"` /* [o] errors from host adapter */
+	DriverStatus  uint16 `struc: "uint16"` /* [o] errors from software driver */
+	Resid         int32  `struc: "int32"` /* [o] dxfer_len - actual_transferred */
+	Duration      uint32 `struc: "uint32"` /* [o] time taken (unit: millisec) */
+	Info          uint32 `struc: "uint32"` /* [o] auxiliary information */
 }
 
-type SCSI_PASS_THROUGH_DIRECT_WITH_SENSE_BUF struct {
-	SCSI_PASS_THROUGH_DIRECT
-	Filter    uint32 // realign buffers to double word boundary
+type SG_IO_HDR_WITH_SENSE_BUF struct {
+	SG_IO_HDR
+	Filter uint32
 	SenseData [32]byte
 }
 
 type SCSI_SECURITY_PROTOCOL struct {
-	OperationCode uint8
-	Protocol      uint8
-	ProtocolSp    uint16
-	B04           uint8
-	B05           uint8
-	Length        uint32
-	B10           uint8
-	Control       uint8
+	OperationCode uint8  `struc:"uint8"`
+	Protocol      uint8  `struc:"uint8"`
+	ProtocolSp    uint16 `struc:"uint16,big"`
+	B04           uint8  `struc:"uint8"`
+	B05           uint8  `struc:"uint8"`
+	Length        uint32 `struc:"uint32,big"`
+	B10           uint8  `struc:"uint8"`
+	Control       uint8  `struc:"uint8"`
 }
 
 func (p *SCSI_SECURITY_PROTOCOL) IsInc512() bool {
@@ -54,9 +63,8 @@ type SCSI_ADDRESS struct {
 }
 
 const (
-	SCSI_IOCTL_DATA_OUT         = byte(0)
-	SCSI_IOCTL_DATA_IN          = byte(1)
-	SCSI_IOCTL_DATA_UNSPECIFIED = byte(2)
+	SG_DXFER_TO_DEV = -2
+	SG_DXFER_FROM_DEV = -3
 )
 
 //
