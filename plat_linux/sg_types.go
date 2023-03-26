@@ -27,7 +27,7 @@ type SG_IO_HDR struct {
 
 type SG_IO_HDR_WITH_SENSE_BUF struct {
 	SG_IO_HDR
-	Filter uint32
+	Filter uint32 // realign buffers to double word boundary
 	SenseData [32]byte
 }
 
@@ -62,9 +62,38 @@ type SCSI_ADDRESS struct {
 	Lun        uint8
 }
 
+//
+// SG IO and protocol related constants
+//
+
 const (
+	SG_DXFER_NONE = -1
 	SG_DXFER_TO_DEV = -2
 	SG_DXFER_FROM_DEV = -3
+	SG_DXFER_TO_FROM_DEV = -4
+
+	SG_READ = 0
+	SG_WRITE = 1
+
+	SG_PIO = 0
+	SG_DMA = 1
+
+	SG_CHECK_CONDITION = 0x02
+	SG_DRIVER_SENSE = 0x08
+
+	SG_ATA_16 = 0x85
+	SG_ATA_16_LEN = 16
+
+	SG_ATA_12 = 0xa1
+	SG_ATA_12_LEN = 12
+
+	SG_ATA_LBA48 = 1
+	SG_ATA_PROTO_NON_DATA = 3
+	SG_ATA_PROTO_PIO_IN = 4
+	SG_ATA_PROTO_PIO_OUT = 5
+	SG_ATA_PROTO_DMA = 6
+	SG_ATA_PROTO_UDMA_IN = 11 /* not yet supported in libata */
+	SG_ATA_PROTO_UDMA_OUT = 12 /* not yet supported in libata */
 )
 
 //

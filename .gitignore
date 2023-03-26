@@ -16,3 +16,6 @@
 
 # Configuration for vscode in project
 .vscode/
+
+# Output of strace
+*strace.txt

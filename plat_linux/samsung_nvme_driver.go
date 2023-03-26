@@ -17,6 +17,6 @@ func NewSamsungNvmeDriver() *SamsungNvmeDriver {
 	return &SamsungNvmeDriver{}
 }
 
-func (d *SamsungNvmeDriver) OpenByHandle(handle int) (common.DriveHandle, error) {
+func (d *SamsungNvmeDriver) OpenByHandle(handle int) (common.DriverHandle, error) {
 	return nil, errors.New("not supported yet")
 }

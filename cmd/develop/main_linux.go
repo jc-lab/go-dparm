@@ -4,35 +4,18 @@
 package main
 
 import (
-	"github.com/jc-lab/go-dparm"
+	"github.com/jc-lab/go-dparm/plat_linux"
 	"log"
 )
 
-// name conflict
-func test() {
-	factory := go_dparm.NewSystemDriveFactory()
-	handle, err := factory.OpenByPath("/dev/sda")
+func main() {
+	var disk plat_linux.SgDriverHandle
+	disk.D = plat_linux.NewSgDriver()
+
+ 	_, err := disk.D.OpenByPath("/dev/sda")
 	if err != nil {
-		log.Println(err)
-	} else {
-		_ = handle
+		log.Fatalf("%s\n", err)
 	}
 
-	drives, err := factory.EnumDrives()
-	if err != nil {
-		log.Println(err)
-	} else {
-		for i, drive := range drives {
-			log.Printf("DRIVE[%d]: %s", i, drive)
-		}
-	}
-
-	volumes, err := factory.EnumVolumes()
-	if err != nil {
-		log.Println(err)
-	} else {
-		for i, drive := range volumes {
-			log.Printf("VOLUME[%d]: %s", i, drive)
-		}
-	}
+	log.Printf("Disk info: %v\n", string(disk.Identity[:]))
 }

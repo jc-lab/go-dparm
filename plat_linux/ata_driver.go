@@ -74,7 +74,7 @@ func (d *AtaDriver) OpenByHandle(handle int) (common.DriverHandle, error) {
 func (d *AtaDriver) doTaskFileCmd(handle int, rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
 	var rootError error = nil
 
-	if rw && data != nil {
+	if rw && data  != nil {
 		for i := range data {
 			data[i] = 0
 		}
@@ -192,4 +192,8 @@ func (s *AtaDriverHandle) Close() {
 
 func (s *AtaDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
 	return s.d.doTaskFileCmd(s.handle, rw, dma, tf, data, timeoutSecs)
+}
+
+func (s *AtaDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
+	return nil
 }

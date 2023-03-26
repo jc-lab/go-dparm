@@ -24,26 +24,29 @@ type SgDriver struct {
 	LinuxDriver
 }
 
+// Should not be exported in release, exported for testing!
 type SgDriverHandle struct {
 	common.AtaDriverHandle
-	d *SgDriver
-	fd int
-	identity [512]byte
+	D *SgDriver
+	Fd int
+	Identity [512]byte
 }
 
-func NewScsiDriver() *SgDriver {
+func NewSgDriver() *SgDriver {
 	return &SgDriver{}
 }
 
-func (d *SgDriver) OpenByFd(path string) (common.DriverHandle, error) {
-	handle, err := OpenDevice(path)
+func (d *SgDriver) OpenByPath(path string) (common.DriverHandle, error) {
+	fd, err := OpenDevice(path)
 	if err != nil {
 		return nil, err
 	}
 
-	driverHandle, err := d.openImpl(handle)
+	driverHandle, err := d.openImpl(fd)
 	if err != nil {
-		_ = unix.Close(handle)
+		if _, err = unix.FcntlInt(uintptr(fd), unix.F_GETFD, 0); err == nil {
+			_ = unix.Close(fd)
+		}
 	}
 	return driverHandle, err
 }
@@ -52,7 +55,7 @@ func (d *SgDriver) openImpl(fd int) (common.DriverHandle, error) {
 	tf := &ata.Tf {
 		Command: ATA_IDENTIFY_DEVICE,
 	}
-	//tf.Lob.Nsect = 1
+	//tf.Lob.Nsect = 1 
 
 	dataBuffer := internal.NewAlignedBuffer(512, 512)
 
@@ -61,12 +64,12 @@ func (d *SgDriver) openImpl(fd int) (common.DriverHandle, error) {
 	}
 
 	driverHandle := &SgDriverHandle {
-		d: d,
-		fd: fd,
+		D: d,
+		Fd: fd,
 	}
 	dataBuffer.ResetRead()
-	dataBuffer.Read(driverHandle.identity[:])
-	internal.AtaSwapWordEndian(driverHandle.identity[:])
+	dataBuffer.Read(driverHandle.Identity[:])
+	internal.AtaSwapWordEndian(driverHandle.Identity[:])
 
 	return driverHandle, nil
 }
@@ -82,11 +85,13 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 	}
 
 	sgParams := SG_IO_HDR_WITH_SENSE_BUF{}
+	dataBuffer := make([]byte, 512)
 
 	for retry := 0; retry < 2; retry++ {
 		sgParams.InterfaceID = 'S'
 		sgParams.Timeout = uint32(timeoutSecs)
 		sgParams.DxferDirection = int32(internal.Ternary(rw, SG_DXFER_FROM_DEV, SG_DXFER_TO_DEV))
+		sgParams.Dxferp = uintptr(unsafe.Pointer(&dataBuffer))
 		sgParams.MxSbLen = uint8(unsafe.Sizeof(sgParams.SenseData))
 		sgParams.Sbp = &sgParams.SenseData[0]
 
@@ -130,15 +135,50 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				Command:       uint8(tf.Command),
 				Control:       0, // always zero
 			}
-			//cdb.SetProtocol(PIO_DATA_IN)
-			////cdb.SetTDir(true)
-			//cdb.SetByteBlock(true)
-			//cdb.SetTLength(2)
+
 			n, err := struc.Sizeof(cdb)
 			if err != nil {
 				return err
 			}
 			sgParams.CmdLen = byte(n)
+
+			cmdBuffer := make([]byte, sgParams.CmdLen)
+
+			if dma {
+				cmdBuffer[1] = SG_ATA_PROTO_DMA // Sense data always included(?)
+			} else {
+				cmdBuffer[1] = byte(internal.Ternary(rw, SG_ATA_PROTO_PIO_OUT, SG_ATA_PROTO_NON_DATA))
+			}
+
+			if sgParams.CmdLen == 16 {
+				cmdBuffer[0] = SG_ATA_16
+				cmdBuffer[4] = tf.Lob.Feat
+				cmdBuffer[6] = tf.Lob.Nsect
+				cmdBuffer[8] = tf.Lob.Lbal
+				cmdBuffer[10] = tf.Lob.Lbam
+				cmdBuffer[12] = tf.Lob.Lbah
+				cmdBuffer[13] = tf.Dev
+				cmdBuffer[14] = byte(tf.Command)
+				if tf.IsLba48 == 1 {
+					cmdBuffer[1] |= SG_ATA_LBA48
+					cmdBuffer[3] = tf.Hob.Feat
+					cmdBuffer[5] = tf.Hob.Nsect
+					cmdBuffer[7] = tf.Hob.Lbal
+					cmdBuffer[9] = tf.Hob.Lbam
+					cmdBuffer[11] = tf.Hob.Lbah
+				}
+			} else if sgParams.CmdLen == 12 {
+				cmdBuffer[0] = SG_ATA_12
+				cmdBuffer[3] = tf.Lob.Feat
+				cmdBuffer[4] = tf.Lob.Nsect
+				cmdBuffer[5] = tf.Lob.Lbal
+				cmdBuffer[6] = tf.Lob.Lbam
+				cmdBuffer[7] = tf.Lob.Lbah
+				cmdBuffer[8] = tf.Dev
+				cmdBuffer[9] = byte(tf.Command)
+			}
+
+			sgParams.Cmdp = &cmdBuffer[0]
 
 			writer := internal.NewWrappedBuffer([]byte{*sgParams.Cmdp})
 			err = struc.PackWithOptions(writer, cdb, strucOpts)
@@ -166,7 +206,7 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
-			); err != 0 {
+			); err != 0 || sgParams.DriverStatus != 0 {
 				rootError = err
 			} else {
 				if !rw && alignedBuffer != nil {
@@ -188,7 +228,7 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
-			); err != 0 {
+			); err != 0 || sgParams.DriverStatus != 0 {
 				rootError = err
 			} else {
 				rootError = nil
@@ -233,15 +273,15 @@ func (s *SgDriverHandle) ReopenWritable() error {
 }
 
 func (s *SgDriverHandle) Close() {
-	_ = unix.Close(s.fd)
+	_ = unix.Close(s.Fd)
 }
 
 func (s *SgDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
-	return s.d.doTaskFilecmd(s.fd, rw, dma, tf, data, timeoutSecs)
+	return s.D.doTaskFilecmd(s.Fd, rw, dma, tf, data, timeoutSecs)
 }
 
 func (s *SgDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
-	return scsiSecurityCommand(s.fd, rw, dma, protocol, comId, buffer, timeoutSecs)
+	return scsiSecurityCommand(s.Fd, rw, dma, protocol, comId, buffer, timeoutSecs)
 }
 
 func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16, data []byte, timeoutSecs int) error {

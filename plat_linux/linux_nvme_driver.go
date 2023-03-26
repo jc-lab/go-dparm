@@ -91,3 +91,7 @@ func (s *LinuxNvmeDriverHandle) Close() {
 func (s *LinuxNvmeDriverHandle) GetNvmeIdentity() []byte {
 	return s.identity
 }
+
+func (S *LinuxNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
+	return nil
+}

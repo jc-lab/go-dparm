@@ -8,5 +8,5 @@ import (
 )
 
 type LinuxDriver interface {
-	OpenByHandle(handle int) (common.DriverHandle, error)
+	OpenByFd(fd int) (common.DriverHandle, error)
 }
