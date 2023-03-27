@@ -13,7 +13,7 @@ type SG_IO_HDR struct {
 	Timeout       uint32 `struc: "uint32"` /* [i] MAX_UINT->no timeout (unit: millisec) */
 	Flags         uint32 `struc: "uint32"` /* [i] 0 -> default, see SG_FLAG... */
 	PackID        int32  `struc: "int32"` /* [i->o] unused internally (normally) */
-	UsrPtr        uintptr  `struc: "uintptr"` /* [i->o] unused internally */
+	UsrPtr        uintptr  `struc: "unsafe.Pointer"` /* [i->o] unused internally */
 	Status        uint8  `struc: "uint8"` /* [o] scsi status */
 	MaskedStatus  uint8  `struc: "uint8"` /* [o] shifted, masked scsi status */
 	MsgStatus     uint8  `struc: "uint8"` /* [o] messaging level data (optional) */
@@ -94,6 +94,24 @@ const (
 	SG_ATA_PROTO_DMA = 6
 	SG_ATA_PROTO_UDMA_IN = 11 /* not yet supported in libata */
 	SG_ATA_PROTO_UDMA_OUT = 12 /* not yet supported in libata */
+)
+
+//
+// CDB tlen constants.
+//
+
+const (
+	SG_CDB2_TLEN_NODATA = 0
+	SG_CDB2_TLEN_FEAT = 1
+	SG_CDB2_TLEN_NSECT = 2
+
+	SG_CDB2_TLEN_BYTES = 0
+	SG_CDB2_TLEN_SECTORS = 1
+
+	SG_CDB2_TDIR_TO_DEV = 0
+	SG_CDB2_TDIR_FROM_DEV = 1
+
+	SG_CDB2_CHECK_COND = 1
 )
 
 //

@@ -12,7 +12,7 @@ func main() {
 	var disk plat_linux.SgDriverHandle
 	disk.D = plat_linux.NewSgDriver()
 
- 	_, err := disk.D.OpenByPath("/dev/sda")
+	_, err := disk.D.OpenByPath("/dev/sda")
 	if err != nil {
 		log.Fatalf("%s\n", err)
 	}

@@ -44,9 +44,7 @@ func (d *SgDriver) OpenByPath(path string) (common.DriverHandle, error) {
 
 	driverHandle, err := d.openImpl(fd)
 	if err != nil {
-		if _, err = unix.FcntlInt(uintptr(fd), unix.F_GETFD, 0); err == nil {
-			_ = unix.Close(fd)
-		}
+		_ = unix.Close(fd)
 	}
 	return driverHandle, err
 }
@@ -112,13 +110,28 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				Command:         uint8(tf.Command),
 				Control:         0, // always zero
 			}
+			if dma {
+				cdb.SetProtocol(SG_ATA_PROTO_DMA)
+			} else {
+				cdb.SetProtocol(uint8(internal.Ternary(rw, SG_ATA_PROTO_PIO_OUT, SG_ATA_PROTO_NON_DATA)))
+			}
+
+			if data != nil {
+				cdb.SetTDir(rw)
+			} else {
+				cdb.SetCkCond(true)
+			}
+
 			n, err := struc.Sizeof(cdb)
 			if err != nil {
 				return err
 			}
 			sgParams.CmdLen = byte(n)
 
-			writer := internal.NewWrappedBuffer([]byte{*sgParams.Cmdp})
+			cmdBuffer := make([]byte, sgParams.CmdLen)
+			sgParams.Cmdp = &cmdBuffer[0]
+
+			writer := internal.NewWrappedBuffer(cmdBuffer[:])
 			err = struc.PackWithOptions(writer, cdb, strucOpts)
 			if err != nil {
 				return err
@@ -135,6 +148,18 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				Command:       uint8(tf.Command),
 				Control:       0, // always zero
 			}
+			if dma {
+				cdb.SetProtocol(SG_ATA_PROTO_DMA)
+			} else {
+				cdb.SetProtocol(uint8(internal.Ternary(rw, SG_ATA_PROTO_PIO_OUT, SG_ATA_PROTO_NON_DATA)))
+			}
+
+			if data != nil {
+				cdb.SetTDir(rw)
+			} else {
+				cdb.SetCkCond(true)
+			}
+			
 
 			n, err := struc.Sizeof(cdb)
 			if err != nil {
@@ -143,44 +168,9 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 			sgParams.CmdLen = byte(n)
 
 			cmdBuffer := make([]byte, sgParams.CmdLen)
-
-			if dma {
-				cmdBuffer[1] = SG_ATA_PROTO_DMA // Sense data always included(?)
-			} else {
-				cmdBuffer[1] = byte(internal.Ternary(rw, SG_ATA_PROTO_PIO_OUT, SG_ATA_PROTO_NON_DATA))
-			}
-
-			if sgParams.CmdLen == 16 {
-				cmdBuffer[0] = SG_ATA_16
-				cmdBuffer[4] = tf.Lob.Feat
-				cmdBuffer[6] = tf.Lob.Nsect
-				cmdBuffer[8] = tf.Lob.Lbal
-				cmdBuffer[10] = tf.Lob.Lbam
-				cmdBuffer[12] = tf.Lob.Lbah
-				cmdBuffer[13] = tf.Dev
-				cmdBuffer[14] = byte(tf.Command)
-				if tf.IsLba48 == 1 {
-					cmdBuffer[1] |= SG_ATA_LBA48
-					cmdBuffer[3] = tf.Hob.Feat
-					cmdBuffer[5] = tf.Hob.Nsect
-					cmdBuffer[7] = tf.Hob.Lbal
-					cmdBuffer[9] = tf.Hob.Lbam
-					cmdBuffer[11] = tf.Hob.Lbah
-				}
-			} else if sgParams.CmdLen == 12 {
-				cmdBuffer[0] = SG_ATA_12
-				cmdBuffer[3] = tf.Lob.Feat
-				cmdBuffer[4] = tf.Lob.Nsect
-				cmdBuffer[5] = tf.Lob.Lbal
-				cmdBuffer[6] = tf.Lob.Lbam
-				cmdBuffer[7] = tf.Lob.Lbah
-				cmdBuffer[8] = tf.Dev
-				cmdBuffer[9] = byte(tf.Command)
-			}
-
 			sgParams.Cmdp = &cmdBuffer[0]
 
-			writer := internal.NewWrappedBuffer([]byte{*sgParams.Cmdp})
+			writer := internal.NewWrappedBuffer(cmdBuffer[:])
 			err = struc.PackWithOptions(writer, cdb, strucOpts)
 			if err != nil {
 				return err
@@ -201,12 +191,13 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				sgParams.Dxferp = uintptr(unsafe.Pointer(alignedBuffer.GetPointer()))
 			}
 
-			if _, _, err := unix.Syscall(
+			_, _, err := unix.Syscall(
 				unix.SYS_IOCTL,
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
-			); err != 0 || sgParams.DriverStatus != 0 {
+			)	
+			if err != unix.Errno(0) {
 				rootError = err
 			} else {
 				if !rw && alignedBuffer != nil {
@@ -223,12 +214,13 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 			copyFromPointer(buffer, unsafe.Pointer(&sgParams), int(unsafe.Sizeof(sgParams)))
 			copy(buffer[n:], data)
 
-			if _, _, err := unix.Syscall(
+			_, _, err := unix.Syscall(
 				unix.SYS_IOCTL,
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
-			); err != 0 || sgParams.DriverStatus != 0 {
+			)
+			if err != unix.Errno(0) {
 				rootError = err
 			} else {
 				rootError = nil
@@ -241,7 +233,7 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 	}
 
 	var senseInfo scsi.SENSE_DATA
-	copyToPointer(unsafe.Pointer(&sgParams), sgParams.SenseData[:], int(unsafe.Sizeof(senseInfo)))
+	copyToPointer(unsafe.Pointer(&senseInfo), sgParams.SenseData[:], int(unsafe.Sizeof(senseInfo)))
 
 	if rootError == nil {
 		// ?? if sgParams.SenseInfo.IsValid() && sgParams.SenseInfo.GetSenseKey() != 0
