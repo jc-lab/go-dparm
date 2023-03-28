@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	IOCTL_STORAGE_QUERY_PROPERTY     = 0x2d1400
 	IOCTL_STORAGE_GET_DEVICE_NUMBER  = 0x2d1080
 	IOCTL_DISK_GET_DRIVE_GEOMETRY_EX = 0x700a0
 	IOCTL_DISK_GET_DRIVE_LAYOUT_EX   = 0x00070050
@@ -76,7 +77,7 @@ func ReadBasicInfo(handle windows.Handle) *WinBasicInfo {
 		result.DiskGeometryEx = &diskGeometryEx
 	}
 
-	data, err := readDeviceIoControl(handle, IOCTL_DISK_GET_DRIVE_LAYOUT_EX)
+	data, err := readDeviceIoControl(handle, IOCTL_DISK_GET_DRIVE_LAYOUT_EX, nil, 0)
 	if err == nil {
 		header := (*DRIVE_LAYOUT_INFORMATION_EX_HEADER)(unsafe.Pointer(&data[0]))
 		next := data[int(unsafe.Sizeof(*header)):]
@@ -96,15 +97,73 @@ func ReadBasicInfo(handle windows.Handle) *WinBasicInfo {
 	return result
 }
 
-func readDeviceIoControl(handle windows.Handle, ioctl uint32) ([]byte, error) {
+type StorageDeviceDescription struct {
+	DeviceType         byte
+	DeviceTypeModifier byte
+	RemovableMedia     bool
+	VendorId           string
+	ProductId          string
+	ProductRevision    string
+	SerialNumber       string
+	BusType            STORAGE_BUS_TYPE
+}
+
+func ReadStorageQuery(handle windows.Handle) (*StorageDeviceDescription, error) {
+	query := STORAGE_PROPERTY_QUERY_WITH_DUMMY{}
+	query.QueryType = PropertyStandardQuery
+	query.PropertyId = StorageDeviceProperty
+
+	buffer, err := readDeviceIoControl(
+		handle,
+		IOCTL_STORAGE_QUERY_PROPERTY,
+		(*byte)(unsafe.Pointer(&query)),
+		uint32(unsafe.Sizeof(query)),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := (*STORAGE_DEVICE_DESCRIPTOR)(unsafe.Pointer(&buffer[0]))
+
+	// STORAGE_DEVICE_DESCRIPTOR
+
+	result := &StorageDeviceDescription{
+		DeviceType:         resp.DeviceType,
+		DeviceTypeModifier: resp.DeviceTypeModifier,
+		RemovableMedia:     resp.RemovableMedia,
+		BusType:            resp.BusType,
+	}
+
+	result.VendorId = strings.Trim(readNullTerminatedAscii(buffer, int(resp.VendorIdOffset)), " ")
+	result.ProductId = strings.Trim(readNullTerminatedAscii(buffer, int(resp.ProductIdOffset)), " ")
+	result.SerialNumber = strings.Trim(readNullTerminatedAscii(buffer, int(resp.SerialNumberOffset)), " ")
+	result.ProductRevision = strings.Trim(readNullTerminatedAscii(buffer, int(resp.ProductRevisionOffset)), " ")
+
+	return result, nil
+}
+
+func readNullTerminatedAscii(buf []byte, offset int) string {
+	if offset <= 0 {
+		return ""
+	}
+	buf = buf[offset:]
+	for i := 0; i < len(buf); i++ {
+		if buf[i] == 0 {
+			return string(buf[:i])
+		}
+	}
+	return ""
+}
+
+func readDeviceIoControl(handle windows.Handle, ioctl uint32, inBuffer *byte, inSize uint32) ([]byte, error) {
 	var bytesReturned uint32
 
 	buffer := make([]byte, 4096)
-	err := windows.DeviceIoControl(handle, ioctl, nil, 0, &buffer[0], uint32(len(buffer)), &bytesReturned, nil)
+	err := windows.DeviceIoControl(handle, ioctl, inBuffer, inSize, &buffer[0], uint32(len(buffer)), &bytesReturned, nil)
 	errno, ok := err.(syscall.Errno)
 	if ok && errno == windows.ERROR_INSUFFICIENT_BUFFER {
 		buffer = make([]byte, bytesReturned)
-		err = windows.DeviceIoControl(handle, ioctl, nil, 0, &buffer[0], uint32(len(buffer)), &bytesReturned, nil)
+		err = windows.DeviceIoControl(handle, ioctl, inBuffer, inSize, &buffer[0], uint32(len(buffer)), &bytesReturned, nil)
 	}
 	if err == nil {
 		return buffer[:bytesReturned], nil

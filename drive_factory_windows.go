@@ -4,7 +4,6 @@
 package go_dparm
 
 import (
-	"errors"
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/plat_win"
 	"golang.org/x/sys/windows"
@@ -35,11 +34,11 @@ func NewWindowsDriveFactory() *WindowsDriveFactory {
 	return factory
 }
 
-func NewSystemDriveFactory() DriveFactory {
+func NewSystemDriveFactory() common.DriveFactory {
 	return NewWindowsDriveFactory()
 }
 
-func (f *WindowsDriveFactory) OpenByPath(path string) (DriveHandle, error) {
+func (f *WindowsDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
 	handle, err := plat_win.OpenDevice(path)
 	if err != nil {
 		return nil, err
@@ -55,8 +54,9 @@ func (f *WindowsDriveFactory) OpenByPath(path string) (DriveHandle, error) {
 	return nil, err
 }
 
-func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (DriveHandle, error) {
+func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (common.DriveHandle, error) {
 	impl := &DriveHandleImpl{}
+	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DevicePath = path
 
 	basicInfo := plat_win.ReadBasicInfo(handle)
@@ -84,7 +84,20 @@ func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (
 		}
 	}
 
-	return nil, errors.New("Not supported device")
+	storageQueryResp, err := plat_win.ReadStorageQuery(handle)
+	if err == nil && storageQueryResp != nil {
+		if impl.Info.Model == "" {
+			impl.Info.Model = storageQueryResp.ProductId
+		}
+		if impl.Info.Serial == "" {
+			impl.Info.Serial = storageQueryResp.SerialNumber
+		}
+
+		impl.Info.VendorId = storageQueryResp.VendorId
+		impl.Info.ProductRevision = storageQueryResp.ProductRevision
+	}
+
+	return impl, nil
 }
 
 func (f *WindowsDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
@@ -152,6 +165,6 @@ func (f *WindowsDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 	return results, nil
 }
 
-func (f *WindowsDriveFactory) EnumVolumes() (EnumVolumeContext, error) {
-	return plat_win.EnumVolumes()
+func (f *WindowsDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
+	return plat_win.EnumVolumes(f)
 }

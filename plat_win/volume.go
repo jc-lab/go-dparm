@@ -4,8 +4,10 @@
 package plat_win
 
 import (
+	"fmt"
 	"github.com/jc-lab/go-dparm/common"
 	"golang.org/x/sys/windows"
+	"strings"
 	"unsafe"
 )
 
@@ -17,6 +19,7 @@ type VolumeInfoImpl struct {
 }
 
 type EnumVolumeContextImpl struct {
+	factory common.DriveFactory
 	volumes []*VolumeInfoImpl
 }
 
@@ -50,8 +53,23 @@ func (ctx *EnumVolumeContextImpl) FindVolumesByDrive(driveInfo *common.DriveInfo
 	return results
 }
 
-func EnumVolumes() (*EnumVolumeContextImpl, error) {
-	impl := &EnumVolumeContextImpl{}
+func (ctx *EnumVolumeContextImpl) OpenDriveByVolumePath(volumePath string) (common.DriveHandle, error) {
+	volumePath = strings.TrimSuffix(volumePath, "\\")
+	for _, volume := range ctx.volumes {
+		if strings.TrimSuffix(volume.Path, "\\") == volumePath {
+			if len(volume.DiskExtents) > 0 {
+				return ctx.factory.OpenByPath(fmt.Sprintf("\\\\.\\PhysicalDrive%d", volume.DiskExtents[0].DiskNumber))
+			}
+			return nil, nil
+		}
+	}
+	return nil, nil
+}
+
+func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
+	impl := &EnumVolumeContextImpl{
+		factory: factory,
+	}
 
 	volumeNameBuf := [320]uint16{}
 	volumePathBuf := [4096]uint16{}

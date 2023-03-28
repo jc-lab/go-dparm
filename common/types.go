@@ -33,6 +33,9 @@ type DriveInfo struct {
 	FirmwareRevision string
 	RawSerial        [20]byte
 
+	VendorId        string
+	ProductRevision string
+
 	WindowsDevNum   int
 	SmartEnabled    bool
 	AtaIdentity     *ata.IdentityDeviceData

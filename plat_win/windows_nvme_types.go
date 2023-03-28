@@ -107,6 +107,12 @@ type STORAGE_PROPERTY_QUERY struct {
 	// AdditionParameters
 }
 
+type STORAGE_PROPERTY_QUERY_WITH_DUMMY struct {
+	PropertyId           STORAGE_PROPERTY_ID
+	QueryType            STORAGE_QUERY_TYPE
+	AdditionalParameters [1]byte
+}
+
 type STORAGE_PROTOCOL_SPECIFIC_DATA struct {
 	ProtocolType                 STORAGE_PROTOCOL_TYPE
 	DataType                     uint32

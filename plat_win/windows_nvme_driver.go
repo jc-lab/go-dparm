@@ -11,10 +11,6 @@ import (
 	"unsafe"
 )
 
-const (
-	IOCTL_STORAGE_QUERY_PROPERTY = 0x2d1400
-)
-
 type WindowsNvmeDriver struct {
 	WinDriver
 }
