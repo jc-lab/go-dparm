@@ -157,7 +157,7 @@ func (c *ATA_PASSTHROUGH16) GetMultipleCount() uint8 {
 }
 
 func (c *ATA_PASSTHROUGH16) SetMultipleCount(v uint8) {
-	c.B02 = (c.B01 & 0x1F) | (v & 0x07)
+	c.B02 = (c.B02 & 0x1F) | (v & 0x07)
 }
 
 func (c *ATA_PASSTHROUGH16) GetTLength() uint8 {

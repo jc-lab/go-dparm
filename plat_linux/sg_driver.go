@@ -32,6 +32,20 @@ type SgDriverHandle struct {
 	Identity [512]byte
 }
 
+func tfToLba(tf *ata.Tf) uint64 {
+	var lba24, lbah uint32
+	var lba64 uint64
+
+	lba24 = uint32((tf.Lob.Lbah << 16) | (tf.Lob.Lbam << 8) | (tf.Lob.Lbal))
+	if tf.IsLba48 != 0 {
+		lbah = uint32((tf.Hob.Lbah << 16) | (tf.Hob.Lbam << 8) | (tf.Hob.Lbal))
+	} else {
+		lbah = uint32(tf.Dev & 0x0f)
+	}
+	lba64 = (uint64(lbah) << 24) | uint64(lba24)
+	return lba64
+}
+
 func NewSgDriver() *SgDriver {
 	return &SgDriver{}
 }
@@ -53,7 +67,7 @@ func (d *SgDriver) openImpl(fd int) (common.DriverHandle, error) {
 	tf := &ata.Tf {
 		Command: ATA_IDENTIFY_DEVICE,
 	}
-	//tf.Lob.Nsect = 1 
+	tf.Lob.Nsect = 1 
 
 	dataBuffer := internal.NewAlignedBuffer(512, 512)
 
@@ -88,10 +102,11 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 	for retry := 0; retry < 2; retry++ {
 		sgParams.InterfaceID = 'S'
 		sgParams.Timeout = uint32(timeoutSecs)
-		sgParams.DxferDirection = int32(internal.Ternary(rw, SG_DXFER_FROM_DEV, SG_DXFER_TO_DEV))
+		sgParams.DxferDirection = int32(internal.Ternary(data != nil, internal.Ternary(rw, SG_DXFER_TO_DEV, SG_DXFER_FROM_DEV), SG_DXFER_NONE))
 		sgParams.Dxferp = uintptr(unsafe.Pointer(&dataBuffer))
 		sgParams.MxSbLen = uint8(unsafe.Sizeof(sgParams.SenseData))
 		sgParams.Sbp = &sgParams.SenseData[0]
+		sgParams.PackID = int32(tfToLba(tf))
 
 		if tf.IsLba48 != 0 {
 			cdb := &ATA_PASSTHROUGH16{
@@ -111,13 +126,15 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				Control:         0, // always zero
 			}
 			if dma {
-				cdb.SetProtocol(SG_ATA_PROTO_DMA)
+				cdb.SetProtocol(uint8(internal.Ternary(data != nil, SG_ATA_PROTO_DMA, SG_ATA_PROTO_NON_DATA)))
 			} else {
-				cdb.SetProtocol(uint8(internal.Ternary(rw, SG_ATA_PROTO_PIO_OUT, SG_ATA_PROTO_NON_DATA)))
+				cdb.SetProtocol(uint8(internal.Ternary(data != nil, (internal.Ternary(rw, SG_ATA_PROTO_PIO_OUT, SG_ATA_PROTO_PIO_IN)), SG_ATA_PROTO_NON_DATA)))
 			}
 
 			if data != nil {
-				cdb.SetTDir(rw)
+				cdb.SetTLength(SG_CDB2_TLEN_NSECT)
+				cdb.SetByteBlock(true)
+				cdb.SetTDir(!rw)
 			} else {
 				cdb.SetCkCond(true)
 			}
@@ -148,18 +165,34 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				Command:       uint8(tf.Command),
 				Control:       0, // always zero
 			}
+
 			if dma {
-				cdb.SetProtocol(SG_ATA_PROTO_DMA)
+				cdb.SetProtocol(uint8(internal.Ternary(data != nil, SG_ATA_PROTO_DMA, SG_ATA_PROTO_NON_DATA)))
 			} else {
-				cdb.SetProtocol(uint8(internal.Ternary(rw, SG_ATA_PROTO_PIO_OUT, SG_ATA_PROTO_NON_DATA)))
+				cdb.SetProtocol(uint8(internal.Ternary(data != nil, (internal.Ternary(rw, SG_ATA_PROTO_PIO_OUT, SG_ATA_PROTO_PIO_IN)), SG_ATA_PROTO_NON_DATA)))
 			}
 
 			if data != nil {
-				cdb.SetTDir(rw)
+				cdb.SetTLength(SG_CDB2_TLEN_NSECT)
+				cdb.SetByteBlock(true)
+				cdb.SetTDir(!rw)
 			} else {
 				cdb.SetCkCond(true)
 			}
-			
+
+			// test need modification
+			/*if dma {
+				cdb.B01 = uint8(internal.Ternary(data != nil, (SG_ATA_PROTO_DMA << 1), (SG_ATA_PROTO_NON_DATA << 1)))
+			} else {
+				cdb.B01 = uint8(internal.Ternary(data != nil, internal.Ternary(rw, (SG_ATA_PROTO_PIO_OUT << 1), (SG_ATA_PROTO_PIO_IN << 1)), (SG_ATA_PROTO_NON_DATA << 1)))
+			}
+
+			if data != nil {
+				cdb.B02 |= (SG_ATA_PROTO_DMA << 1) | (SG_ATA_PROTO_NON_DATA << 1)
+				cdb.B02 |= uint8(internal.Ternary(rw, (SG_CDB2_TDIR_TO_DEV << 3), (SG_CDB2_TDIR_FROM_DEV << 3)))
+			} else {
+				cdb.B02 = (SG_CDB2_CHECK_COND << 5)
+			}*/
 
 			n, err := struc.Sizeof(cdb)
 			if err != nil {
@@ -248,7 +281,7 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 		}
 	}
 
-	return rootError
+ 	return rootError
 }
 
 
