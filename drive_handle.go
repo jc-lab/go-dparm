@@ -13,27 +13,6 @@ import (
 
 const trimSet = " \t\r\n\x00"
 
-type DriveHandle interface {
-	GetDriverHandle() common.DriverHandle
-	Close()
-	GetDevicePath() string
-	GetDrivingType() common.DrivingType
-	GetDriverName() string
-
-	GetDriveInfo() *common.DriveInfo
-
-	// ATA
-	AtaDoTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error
-
-	// NVME
-	NvmeGetLogPage(nsid uint32, logId uint32, rae bool, size int) ([]byte, error)
-
-	// COMMON
-	SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error
-
-	TcgDiscovery0() error
-}
-
 type DriveHandleImpl struct {
 	common.DriveHandle
 	dh   common.DriverHandle
@@ -142,6 +121,9 @@ func (p *DriveHandleImpl) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, si
 }
 
 func (p *DriveHandleImpl) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
+	if p.dh == nil {
+		return errors.New("Not supported")
+	}
 	return p.dh.SecurityCommand(rw, dma, protocol, comId, buffer, timeoutSecs)
 }
 

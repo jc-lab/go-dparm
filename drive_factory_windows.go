@@ -165,6 +165,48 @@ func (f *WindowsDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 	return results, nil
 }
 
+type VolumeInfoImpl struct {
+	Path        string
+	Filesystem  string
+	MountPoints []string
+	DiskExtents []DISK_EXTENT
+}
+
+type EnumVolumeContextImpl struct {
+	EnumVolumeContext
+	volumes []*VolumeInfoImpl
+}
+
+func (item *VolumeInfoImpl) ToVolumeInfo() common.VolumeInfo {
+	return common.VolumeInfo{
+		Path:        item.Path,
+		Filesystem:  item.Filesystem,
+		MountPoints: item.MountPoints,
+	}
+}
+
+func (ctx *EnumVolumeContextImpl) GetList() []common.VolumeInfo {
+	results := []common.VolumeInfo{}
+	for _, item := range ctx.volumes {
+		results = append(results, item.ToVolumeInfo())
+	}
+	return results
+}
+
+func (ctx *EnumVolumeContextImpl) FindVolumesByDrive(driveInfo *common.DriveInfo) []common.VolumeInfo {
+	results := []common.VolumeInfo{}
+	for _, volume := range ctx.volumes {
+		if len(volume.DiskExtents) <= 0 {
+			continue
+		}
+		diskExtent := volume.DiskExtents[0]
+		if int(diskExtent.DiskNumber) == driveInfo.WindowsDevNum {
+			results = append(results, volume.ToVolumeInfo())
+		}
+	}
+	return results
+}
+
 func (f *WindowsDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
 	return plat_win.EnumVolumes(f)
 }

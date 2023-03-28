@@ -18,7 +18,7 @@ func NewSystemDriveFactory() common.DriveFactory {
 	return NewLinuxDriveFactory()
 }
 
-func (l LinuxDriveFactory) OpenByPath(path string) (DriveHandle, error) {
+func (l LinuxDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -28,7 +28,7 @@ func (l LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 	panic("implement me")
 }
 
-func (l LinuxDriveFactory) EnumVolumes() (EnumVolumeContext, error) {
+func (l LinuxDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
 	//TODO implement me
 	panic("implement me")
 }
