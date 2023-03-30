@@ -46,6 +46,25 @@ func tfToLba(tf *ata.Tf) uint64 {
 	return lba64
 }
 
+// Maybe required..?
+func tfInit(tf *ata.Tf, ataOp ata.OpCode, lba uint64, nsect uint) {
+	tf.Command = ataOp
+	tf.Dev = ata.ATA_USING_LBA
+	tf.Lob.Lbal = uint8(lba)
+	tf.Lob.Lbam = uint8(lba >>  8)
+	tf.Lob.Lbah = uint8(lba >> 16)
+	tf.Lob.Nsect = uint8(nsect)
+	if ata.IsNeedsLba48(ataOp, lba, nsect) {
+		tf.IsLba48 = 1
+		tf.Hob.Nsect = uint8(nsect >> 8)
+		tf.Hob.Lbal = uint8(lba >> 24)
+		tf.Hob.Lbam = uint8(lba >> 32)
+		tf.Hob.Lbal = uint8(lba >> 40)
+	} else {
+		tf.Dev |= uint8(lba >> 24) & 0x0f
+	}
+}
+
 func NewSgDriver() *SgDriver {
 	return &SgDriver{}
 }
@@ -180,20 +199,6 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				cdb.SetCkCond(true)
 			}
 
-			// test need modification
-			/*if dma {
-				cdb.B01 = uint8(internal.Ternary(data != nil, (SG_ATA_PROTO_DMA << 1), (SG_ATA_PROTO_NON_DATA << 1)))
-			} else {
-				cdb.B01 = uint8(internal.Ternary(data != nil, internal.Ternary(rw, (SG_ATA_PROTO_PIO_OUT << 1), (SG_ATA_PROTO_PIO_IN << 1)), (SG_ATA_PROTO_NON_DATA << 1)))
-			}
-
-			if data != nil {
-				cdb.B02 |= (SG_ATA_PROTO_DMA << 1) | (SG_ATA_PROTO_NON_DATA << 1)
-				cdb.B02 |= uint8(internal.Ternary(rw, (SG_CDB2_TDIR_TO_DEV << 3), (SG_CDB2_TDIR_FROM_DEV << 3)))
-			} else {
-				cdb.B02 = (SG_CDB2_CHECK_COND << 5)
-			}*/
-
 			n, err := struc.Sizeof(cdb)
 			if err != nil {
 				return err
@@ -281,7 +286,7 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 		}
 	}
 
- 	return rootError
+	return rootError
 }
 
 
@@ -344,6 +349,9 @@ func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16
 
 		sgParams.CmdLen = byte(sizeOfCdb)
 		sgParams.DxferLen = uint32(len(data))
+
+		cmdBuffer := make([]byte, sgParams.CmdLen)
+		sgParams.Cmdp = &cmdBuffer[0]
 
 		if err := struc.Pack(internal.NewWrappedBuffer([]byte{*sgParams.Cmdp}), cdb); err != nil {
 			return err

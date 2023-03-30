@@ -97,7 +97,7 @@ const (
 )
 
 //
-// CDB tlen constants.
+// CDB B02 constants.
 //
 
 const (
