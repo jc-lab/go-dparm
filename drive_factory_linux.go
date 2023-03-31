@@ -6,7 +6,7 @@ package go_dparm
 import (
 	"log"
 	"strings"
-	"unsafe"
+	_ "unsafe"
 
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/plat_linux"
@@ -129,6 +129,6 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 	return results, nil
 }
 
-func (f *LinuxDriveFactory) EnumVolumes() (EnumVolumeContext, error) {
+func (f *LinuxDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
 	return plat_linux.EnumVolumes(f)
 }

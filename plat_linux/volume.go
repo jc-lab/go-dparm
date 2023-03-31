@@ -4,11 +4,12 @@
 package plat_linux
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
-	"unsafe"
+	_ "unsafe"
 
-	"golang.org/x/sys/unix"
 	"github.com/jc-lab/go-dparm/common"
 )
 
@@ -61,6 +62,42 @@ func (ctx *EnumVolumeContextImpl) OpenDriveByVolumePath(volumePath string) (comm
 			if len(volume.DiskExtents) > 0 {
 				return ctx.factory.OpenByPath(fmt.Sprintf("/dev/"))
 			}
+			return nil, nil
 		}
 	}
+	return nil, nil
+}
+
+func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
+	impl := &EnumVolumeContextImpl{
+		factory: factory,
+	}
+	file, err := os.Open("/proc/mounts")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		item := &VolumeInfoImpl{}
+
+		tokenCtx := scanner.Text()
+		item.Path, tokenCtx, _ = strings.Cut(tokenCtx, " ")
+		mountPath, tokenCtx, _ := strings.Cut(tokenCtx, " ")
+		item.Filesystem, tokenCtx, _ = strings.Cut(tokenCtx, " ")
+		mountOptions, tokenCtx, _ := strings.Cut(tokenCtx, " ")
+
+		_ = mountOptions //not used?
+
+		item.MountPoints = append(item.MountPoints, mountPath)
+
+		impl.volumes = append(impl.volumes, item)
+
+		if scanner.Err() != nil {
+			return nil, err
+		}
+	}
+
+	return impl, nil
 }

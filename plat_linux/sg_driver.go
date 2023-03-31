@@ -24,12 +24,11 @@ type SgDriver struct {
 	LinuxDriver
 }
 
-// Should not be exported in release, exported for testing!
 type SgDriverHandle struct {
 	common.AtaDriverHandle
-	D *SgDriver
-	Fd int
-	Identity [512]byte
+	d *SgDriver
+	fd int
+	identity [512]byte
 }
 
 func tfToLba(tf *ata.Tf) uint64 {
@@ -95,12 +94,12 @@ func (d *SgDriver) openImpl(fd int) (common.DriverHandle, error) {
 	}
 
 	driverHandle := &SgDriverHandle {
-		D: d,
-		Fd: fd,
+		d: d,
+		fd: fd,
 	}
 	dataBuffer.ResetRead()
-	dataBuffer.Read(driverHandle.Identity[:])
-	internal.AtaSwapWordEndian(driverHandle.Identity[:])
+	dataBuffer.Read(driverHandle.identity[:])
+	internal.AtaSwapWordEndian(driverHandle.identity[:])
 
 	return driverHandle, nil
 }
@@ -303,15 +302,15 @@ func (s *SgDriverHandle) ReopenWritable() error {
 }
 
 func (s *SgDriverHandle) Close() {
-	_ = unix.Close(s.Fd)
+	_ = unix.Close(s.fd)
 }
 
 func (s *SgDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
-	return s.D.doTaskFilecmd(s.Fd, rw, dma, tf, data, timeoutSecs)
+	return s.d.doTaskFilecmd(s.fd, rw, dma, tf, data, timeoutSecs)
 }
 
 func (s *SgDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
-	return scsiSecurityCommand(s.Fd, rw, dma, protocol, comId, buffer, timeoutSecs)
+	return scsiSecurityCommand(s.fd, rw, dma, protocol, comId, buffer, timeoutSecs)
 }
 
 func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16, data []byte, timeoutSecs int) error {

@@ -4,7 +4,6 @@
 package plat_linux
 
 import (
-	"strings"
 	"unsafe"
 
 	"github.com/jc-lab/go-dparm/common"

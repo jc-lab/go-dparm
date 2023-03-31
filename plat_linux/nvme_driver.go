@@ -4,7 +4,6 @@
 package plat_linux
 
 import (
-	"errors"
 	"fmt"
 	"unsafe"
 
@@ -36,15 +35,6 @@ func (d *LinuxNvmeDriver) OpenByHandle(fd int) (common.DriverHandle, error) {
 func (d *LinuxNvmeDriver) QueryNvmeIdentity(fd int) ([]byte, error) {
 	nptwb := StorageQueryWithBuffer{}
 
-	nptwb.Query.PropertyId = StorageAdapterProtocolSpecificProperty
-	nptwb.Query.QueryType = PropertyStandardQuery
-	nptwb.ProtocolSpecific.ProtocolType = ProtocolTypeNvme
-	nptwb.ProtocolSpecific.DataType = NVMeDataTypeIdentify
-	nptwb.ProtocolSpecific.ProtocolDataRequestValue = NVME_IDENTIFY_CNS_CONTROLLER
-	nptwb.ProtocolSpecific.ProtocolDataRequestSubValue = 0
-	nptwb.ProtocolSpecific.ProtocolDataOffset = uint32(unsafe.Offsetof(nptwb.Buffer) - unsafe.Sizeof(nptwb.Query))
-	nptwb.ProtocolSpecific.ProtocolDataLength = uint32(unsafe.Sizeof(nptwb.Buffer))
-
 	_, _, err := unix.Syscall(
 		unix.SYS_IOCTL,
 		uintptr(fd),
@@ -64,7 +54,7 @@ func (d *LinuxNvmeDriver) openImpl(fd int) (*LinuxNvmeDriverHandle, error) {
 		return nil, err
 	}
 	if len(identity) != 4096 {
-		return nil, errors.New(fmt.Sprintf("invalid identity size: %d", len(identity)))
+		return nil, fmt.Errorf("invalid identity size: %d", len(identity))
 	}
 
 	driverHandle := &LinuxNvmeDriverHandle{
@@ -96,31 +86,18 @@ func (s *LinuxNvmeDriverHandle) GetNvmeIdentity() []byte {
 }
 
 func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {
-	headerSize := int(unsafe.Sizeof(StorageQueryWithoutBuffer{}))
-	nptwb := StorageQueryWithoutBuffer{}
-	buffer := make([]byte, headerSize+dataSize)
 
-	nptwb.Query.PropertyId = StorageAdapterProtocolSpecificProperty
-	nptwb.Query.QueryType = PropertyStandardQuery
-	nptwb.ProtocolSpecific.ProtocolType = ProtocolTypeNvme
-	nptwb.ProtocolSpecific.DataType = NVMeDataTypeLogPage
-	nptwb.ProtocolSpecific.ProtocolDataRequestValue = logId
-	nptwb.ProtocolSpecific.ProtocolDataRequestSubValue = 0
-	nptwb.ProtocolSpecific.ProtocolDataOffset = uint32(headerSize)
-	nptwb.ProtocolSpecific.ProtocolDataLength = uint32(dataSize)
-
-	/*unix.IoctlRetInt()
 	_, _, err := unix.Syscall(
-		unix.SYS_
+		unix.SYS_FCNTL,
 		uintptr(s.fd),
 		uintptr(SG_IO),
-
+		uintptr(0),
 	)
-	if err != nil {
+	if err != unix.Errno(0) {
 		return nil, err
-	}*/
+	}
 
-	return buffer[headerSize:], nil
+	return nil, nil
 }
 
 func (S *LinuxNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
