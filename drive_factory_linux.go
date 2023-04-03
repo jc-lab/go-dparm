@@ -21,7 +21,7 @@ type LinuxDriveFactory struct {
 func NewLinuxDriveFactory() *LinuxDriveFactory {
 	factory := &LinuxDriveFactory{}
 	factory.drivers = []plat_linux.LinuxDriver{
-		plat_linux.NewNvmeLinuxDriver(),
+		//plat_linux.NewNvmeLinuxDriver(),
 		//linux.NewSamsungNvmeDriver
 		plat_linux.NewLinuxNvmeDriver(),
 		plat_linux.NewSgDriver(),
@@ -110,13 +110,16 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 
 	buf := make([]byte, 4096)
 	entNum, err := unix.ReadDirent(dfd, buf)
+	if err != nil {
+		return nil, err
+	}
 	_, _, names = unix.ParseDirent(buf, entNum, names)
 
 	for _, name := range names {
 		devPath := "/dev/"
 		devPath += name
 		if (!strings.Contains(name, "loop")) && (unix.Stat(devPath, &s) == nil) {
-			if (s.Mode & unix.S_IFMT == unix.S_IFBLK) {
+			if ((s.Mode & unix.S_IFMT) == unix.S_IFBLK) {
 				driveHandle, err := f.OpenByPath(devPath)
 				if err != nil {
 					log.Println(err)
