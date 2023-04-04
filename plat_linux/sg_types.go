@@ -13,7 +13,7 @@ type SG_IO_HDR struct {
 	Timeout       uint32 `struc: "uint32"` /* [i] MAX_UINT->no timeout (unit: millisec) */
 	Flags         uint32 `struc: "uint32"` /* [i] 0 -> default, see SG_FLAG... */
 	PackID        int32  `struc: "int32"` /* [i->o] unused internally (normally) */
-	UsrPtr        uintptr  `struc: "unsafe.Pointer"` /* [i->o] unused internally */
+	UsrPtr        uintptr  `struc: "uintptr"` /* [i->o] unused internally */
 	Status        uint8  `struc: "uint8"` /* [o] scsi status */
 	MaskedStatus  uint8  `struc: "uint8"` /* [o] shifted, masked scsi status */
 	MsgStatus     uint8  `struc: "uint8"` /* [o] messaging level data (optional) */

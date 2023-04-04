@@ -14,7 +14,6 @@ import (
 
 type LinuxNvmeDriver struct {
 	LinuxDriver
-	fd int
 }
 
 type LinuxNvmeDriverHandle struct {
@@ -33,7 +32,29 @@ func (d *LinuxNvmeDriver) OpenByFd(fd int) (common.DriverHandle, error) {
 	return driverHandle, err
 }
 
-func (d *LinuxNvmeDriver) ReadIdentify(fd int) ([]byte, error) {
+func (d *LinuxNvmeDriver) openImpl(fd int) (*LinuxNvmeDriverHandle, error) {
+	driverHandle := &LinuxNvmeDriverHandle{
+		fd: fd,
+	}
+	identity, err := driverHandle.ReadIdentify(fd)
+	if err != nil {
+		return nil, err
+	}
+	if len(identity) != 4096 {
+		return nil, fmt.Errorf("invalid identity size: %d", len(identity))
+	}
+
+	copy(driverHandle.identity[:], identity)
+
+	return driverHandle, nil
+}
+
+func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
+	// Set fd if not set
+	if s.fd == 0 {
+		s.fd = fd
+	}
+
 	identifyBuf := make([]byte, 4096)
 	identifyCmd := NvmeAdminCmd{}
 	identifyCmd.Opcode = NVME_ADMIN_OP_IDENTIFY
@@ -42,7 +63,8 @@ func (d *LinuxNvmeDriver) ReadIdentify(fd int) ([]byte, error) {
 	identifyCmd.DataLen = 4096
 	identifyCmd.Cdw10 = 1
 	identifyCmd.Cdw11 = 0
-	result := d.doNvmeAdminPassthru(&identifyCmd)
+
+	result := s.doNvmeAdminPassthru(&identifyCmd)
 	if result != nil {
 		return nil, result
 	}
@@ -50,7 +72,7 @@ func (d *LinuxNvmeDriver) ReadIdentify(fd int) ([]byte, error) {
 	return identifyBuf[:], nil
 }
 
-func (d *LinuxNvmeDriver) doNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
+func (s *LinuxNvmeDriverHandle) doNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
 	data := NvmeIoctlAdminCmd{}
 	data.Opcode = cmd.Opcode
 	data.Flags = cmd.Flags
@@ -71,7 +93,7 @@ func (d *LinuxNvmeDriver) doNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
 	data.Result = cmd.Result
 	_, _, err := unix.Syscall(
 		unix.SYS_IOCTL,
-		uintptr(d.fd),
+		uintptr(s.fd),
 		NVME_IOCTL_ADMIN_CMD,
 		uintptr(unsafe.Pointer(&data)),
 	)
@@ -81,7 +103,7 @@ func (d *LinuxNvmeDriver) doNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
 	return nil
 }
 
-func (d *LinuxNvmeDriver) doNvmeIoPassthru(cmd *NvmePassthruCmd) error {
+func (s *LinuxNvmeDriverHandle) doNvmeIoPassthru(cmd *NvmePassthruCmd) error {
 	data := NvmeIoctlPassthruCmd{}
 	data.Opcode = cmd.Opcode
 	data.Flags = cmd.Flags
@@ -102,7 +124,7 @@ func (d *LinuxNvmeDriver) doNvmeIoPassthru(cmd *NvmePassthruCmd) error {
 	data.Result = cmd.Result
 	_, _, err := unix.Syscall(
 		unix.SYS_IOCTL,
-		uintptr(d.fd),
+		uintptr(s.fd),
 		NVME_IOCTL_IO_CMD,
 		uintptr(unsafe.Pointer(&data)),
 	)
@@ -113,7 +135,7 @@ func (d *LinuxNvmeDriver) doNvmeIoPassthru(cmd *NvmePassthruCmd) error {
 	return nil
 }
 
-func (d *LinuxNvmeDriver) DoNvmeIo(io *NvmeUserIo) error {
+func (s *LinuxNvmeDriverHandle) DoNvmeIo(io *NvmeUserIo) error {
 	data := NvmeIoctlUserIo{}
 	data.Opcode = io.Opcode
 	data.Flags = io.Flags
@@ -129,7 +151,7 @@ func (d *LinuxNvmeDriver) DoNvmeIo(io *NvmeUserIo) error {
 	data.Appmask = io.Appmask
 	_, _, err := unix.Syscall(
 		unix.SYS_IOCTL,
-		uintptr(d.fd),
+		uintptr(s.fd),
 		NVME_IOCTL_SUBMIT_IO,
 		uintptr(unsafe.Pointer(&data)),
 	)
@@ -138,24 +160,6 @@ func (d *LinuxNvmeDriver) DoNvmeIo(io *NvmeUserIo) error {
 	}
 	
 	return nil
-}
-
-func (d *LinuxNvmeDriver) openImpl(fd int) (*LinuxNvmeDriverHandle, error) {
-	d.fd = fd
-	identity, err := d.ReadIdentify(fd)
-	if err != nil {
-		return nil, err
-	}
-	if len(identity) != 4096 {
-		return nil, fmt.Errorf("invalid identity size: %d", len(identity))
-	}
-
-	driverHandle := &LinuxNvmeDriverHandle{
-		fd: fd,
-	}
-	copy(driverHandle.identity[:], identity)
-
-	return driverHandle, nil
 }
 
 func (s *LinuxNvmeDriverHandle) GetDriverName() string {

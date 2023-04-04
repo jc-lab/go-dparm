@@ -5,7 +5,6 @@ package plat_linux
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strings"
 	_ "unsafe"
@@ -17,12 +16,11 @@ type VolumeInfoImpl struct {
 	Path string
 	Filesystem string
 	MountPoints []string
-	DiskExtents []DISK_EXTENT
 }
 
 type EnumVolumeContextImpl struct {
 	factory common.DriveFactory
-	volumes []*VolumeInfoImpl
+	volumes map[string]*VolumeInfoImpl
 }
 
 func (item *VolumeInfoImpl) ToVolumeInfo() common.VolumeInfo {
@@ -35,8 +33,8 @@ func (item *VolumeInfoImpl) ToVolumeInfo() common.VolumeInfo {
 
 func (ctx *EnumVolumeContextImpl) GetList() []common.VolumeInfo {
 	results := []common.VolumeInfo{}
-	for _, item := range ctx.volumes {
-		results = append(results, item.ToVolumeInfo())
+	for _, volume := range ctx.volumes {
+		results = append(results, volume.ToVolumeInfo())
 	}
 	return results
 }
@@ -44,11 +42,7 @@ func (ctx *EnumVolumeContextImpl) GetList() []common.VolumeInfo {
 func (ctx *EnumVolumeContextImpl) FindVolumesByDrive(driveInfo *common.DriveInfo) []common.VolumeInfo {
 	results := []common.VolumeInfo{}
 	for _, volume := range ctx.volumes {
-		if len(volume.DiskExtents) <= 0 {
-			continue
-		}
-		diskExtent := volume.DiskExtents[0]
-		if int(diskExtent.DiskNumber) == driveInfo.LinuxDevNum {
+		if volume.Path == driveInfo.DevicePath {
 			results = append(results, volume.ToVolumeInfo())
 		}
 	}
@@ -59,42 +53,48 @@ func (ctx *EnumVolumeContextImpl) OpenDriveByVolumePath(volumePath string) (comm
 	volumePath = strings.TrimSuffix(volumePath, "/")
 	for _, volume := range ctx.volumes {
 		if strings.TrimSuffix(volume.Path, "/") == volumePath {
-			if len(volume.DiskExtents) > 0 {
-				return ctx.factory.OpenByPath(fmt.Sprintf("/dev/"))
-			}
-			return nil, nil
+			return ctx.factory.OpenByPath(volumePath)
 		}
+		return nil, nil
 	}
 	return nil, nil
 }
 
 func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
-	impl := &EnumVolumeContextImpl{
-		factory: factory,
-	}
 	file, err := os.Open("/proc/mounts")
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
+	impl := &EnumVolumeContextImpl{
+		factory: factory,
+		volumes: make(map[string]*VolumeInfoImpl),
+	}
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		item := &VolumeInfoImpl{}
-
 		tokenCtx := scanner.Text()
-		item.Path, tokenCtx, _ = strings.Cut(tokenCtx, " ")
+		devicePath, tokenCtx, _ := strings.Cut(tokenCtx, " ")
 		mountPath, tokenCtx, _ := strings.Cut(tokenCtx, " ")
-		item.Filesystem, tokenCtx, _ = strings.Cut(tokenCtx, " ")
+		filesystem, tokenCtx, _ := strings.Cut(tokenCtx, " ")
 		mountOptions, tokenCtx, _ := strings.Cut(tokenCtx, " ")
 
 		_ = mountOptions //not used?
 
-		item.MountPoints = append(item.MountPoints, mountPath)
+		volumeInfo, exist := impl.volumes[devicePath]
+		if !exist {
+			impl.volumes[devicePath] = &VolumeInfoImpl{}
+			volumeInfo = impl.volumes[devicePath]
+		}
 
-		impl.volumes = append(impl.volumes, item)
+		if volumeInfo.Path == "" {
+			volumeInfo.Path = devicePath
+			volumeInfo.Filesystem = filesystem
+		}
+		volumeInfo.MountPoints = append(volumeInfo.MountPoints, mountPath)
 
-		if scanner.Err() != nil {
+		if err = scanner.Err(); err != nil {
 			return nil, err
 		}
 	}

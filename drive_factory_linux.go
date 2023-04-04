@@ -25,7 +25,6 @@ func NewLinuxDriveFactory() *LinuxDriveFactory {
 		//linux.NewSamsungNvmeDriver
 		plat_linux.NewLinuxNvmeDriver(),
 		plat_linux.NewSgDriver(),
-		plat_linux.NewAtaDriver(),
 	}
 	return factory
 }
@@ -54,44 +53,6 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 	impl := &DriveHandleImpl{}
 	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DevicePath = path
-
-	basicInfo := plat_linux.ReadBasicInfo(fd)
-
-	impl.Info.PartitionStyle = basicInfo.PartitionStyle
-	impl.Info.GptDiskId = basicInfo.GptDiskId
-	impl.Info.MbrDiskSignature = basicInfo.MbrSignature
-
-	if basicInfo.StorageDeviceNumber != nil {
-		impl.Info.LinuxDevNum = int(basicInfo.StorageDeviceNumber.DeviceNumber)
-	}
-
-	if basicInfo.DiskGeometryEx != nil {
-		impl.Info.TotalCapacity = int64(basicInfo.DiskGeometryEx.DiskSize)
-	}
-
-	for _, driver := range f.drivers {
-		driverHandle, err := driver.OpenByFd(fd)
-		if err == nil {
-			impl.dh = driverHandle
-			impl.Info.DrivingType = driverHandle.GetDrivingType()
-			impl.Info.DriverName = driverHandle.GetDriverName()
-			impl.init()
-			return impl, nil
-		}
-	}
-
-	storageQueryResp, err := plat_linux.ReadStorageQuery(fd)
-	if err == nil && storageQueryResp != nil {
-		if impl.Info.Model == "" {
-			impl.Info.Model = storageQueryResp.ProductId
-		}
-		if impl.Info.Serial == "" {
-			impl.Info.Serial = storageQueryResp.SerialNumber
-		}
-
-		impl.Info.VendorId = storageQueryResp.VendorId
-		impl.Info.ProductRevision = storageQueryResp.ProductRevision
-	}
 
 	return impl, nil
 }

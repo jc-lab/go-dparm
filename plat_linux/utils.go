@@ -29,26 +29,6 @@ func OpenDevice(path string) (int, error) {
 	return unix.Open(path, unix.O_RDWR | unix.O_NONBLOCK, uint32(unix.S_IRUSR | unix.S_IWUSR | unix.S_IRGRP | unix.S_IWGRP))
 }
 
-
-func ReadBasicInfo(fd int) *LinuxBasicInfo {
-	panic("")
-}
-
-type StorageDeviceDescription struct {
-	DeviceType         byte
-	DeviceTypeModifier byte
-	RemovableMedia     bool
-	VendorId           string
-	ProductId          string
-	ProductRevision    string
-	SerialNumber       string
-	BusType            STORAGE_BUS_TYPE
-}
-
-func ReadStorageQuery(fd int) (*StorageDeviceDescription, error) {
-	panic("")
-}
-
 func readNullTerminatedAscii(buf []byte, offset int) string {
 	if offset <= 0 {
 		return ""
@@ -60,10 +40,6 @@ func readNullTerminatedAscii(buf []byte, offset int) string {
 		}
 	}
 	return ""
-}
-
-func readDeviceIoControl(fd int, ioctl uint32, inBuffer *byte, inSize uint32) ([]byte, error) {
-	panic("implement needed")
 }
 
 func copyToPointer(dest unsafe.Pointer, src []byte, len int) {
