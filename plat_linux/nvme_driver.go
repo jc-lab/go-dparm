@@ -69,7 +69,7 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 		return nil, result
 	}
 
-	return identifyBuf[:], nil
+	return identifyBuf, nil
 }
 
 func (s *LinuxNvmeDriverHandle) doNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
