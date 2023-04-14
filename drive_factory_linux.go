@@ -25,7 +25,6 @@ type LinuxDriveFactory struct {
 func NewLinuxDriveFactory() *LinuxDriveFactory {
 	factory := &LinuxDriveFactory{}
 	factory.drivers = []plat_linux.LinuxDriver{
-		//plat_linux.NewNvmeLinuxDriver(),
 		//linux.NewSamsungNvmeDriver
 		plat_linux.NewLinuxNvmeDriver(),
 		plat_linux.NewSgDriver(),
@@ -94,7 +93,7 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 		if (!strings.Contains(name, "loop")) && (unix.Stat(devPath, &s) == nil) {
 			if ((s.Mode & unix.S_IFMT) == unix.S_IFBLK) {
 				// As CD-ROM is not supported, exclude cd-rom from probing
-				if strings.Contains(name, "sr") {
+				if strings.Contains(name, "sr") || strings.Contains(name, "nvme") {
 					continue
 				}
 
@@ -118,7 +117,7 @@ func (f *LinuxDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
 func getIdInfo(path string) (string, string, string, string) {
 	idPath := "/dev/disk/by-id"
 	var model, serial, vendor, rev string
-	_, _, _, _ = model, serial, vendor, rev // temporal not used error handling
+	_, _, _, _ = model, serial, vendor, rev // temporal variable not used error handling
 
 	fd, err := unix.Open(idPath, unix.O_RDONLY | unix.O_DIRECTORY, 0o666)
 	if err != nil {
@@ -126,7 +125,7 @@ func getIdInfo(path string) (string, string, string, string) {
 	}
 	defer unix.Close(fd)
 
-	devBuf := make([]byte, 256)
+	devBuf := make([]byte, 65536)
 	_, err = unix.ReadDirent(fd, devBuf)
 	if err != nil {
 		log.Fatalln(err)
