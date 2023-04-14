@@ -35,9 +35,9 @@ func tfToLba(tf *ata.Tf) uint64 {
 	var lba24, lbah uint32
 	var lba64 uint64
 
-	lba24 = uint32((tf.Lob.Lbah << 16) | (tf.Lob.Lbam << 8) | (tf.Lob.Lbal))
+	lba24 = (uint32(tf.Lob.Lbah) << 16) | (uint32(tf.Lob.Lbam )<< 8) | (uint32(tf.Lob.Lbal))
 	if tf.IsLba48 != 0 {
-		lbah = uint32((tf.Hob.Lbah << 16) | (tf.Hob.Lbam << 8) | (tf.Hob.Lbal))
+		lbah = ((uint32(tf.Hob.Lbah) << 16) | (uint32(tf.Hob.Lbam) << 8) | (uint32(tf.Hob.Lbal)))
 	} else {
 		lbah = uint32(tf.Dev & 0x0f)
 	}
@@ -45,7 +45,6 @@ func tfToLba(tf *ata.Tf) uint64 {
 	return lba64
 }
 
-// Maybe required..?
 func tfInit(tf *ata.Tf, ataOp ata.OpCode, lba uint64, nsect uint) {
 	tf.Command = ataOp
 	tf.Dev = ata.ATA_USING_LBA
@@ -81,7 +80,7 @@ func (d *SgDriver) OpenByPath(path string) (common.DriverHandle, error) {
 	return driverHandle, err
 }
 
-func (d *SgDriver) openImpl(fd int) (common.DriverHandle, error) {
+func (d *SgDriver) openImpl(fd int) (*SgDriverHandle, error) {
 	tf := &ata.Tf {
 		Command: ATA_IDENTIFY_DEVICE,
 	}
@@ -305,7 +304,11 @@ func (s *SgDriverHandle) Close() {
 	_ = unix.Close(s.fd)
 }
 
-func (s *SgDriverHandle) doTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
+func (s *SgDriverHandle) GetIdentity() []byte {
+	return s.identity[:]
+}
+
+func (s *SgDriverHandle) DoTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
 	return s.d.doTaskFilecmd(s.fd, rw, dma, tf, data, timeoutSecs)
 }
 

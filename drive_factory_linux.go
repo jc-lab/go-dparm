@@ -6,7 +6,6 @@ package go_dparm
 import (
 	"log"
 	"strings"
-	_ "unsafe"
 
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/plat_linux"
@@ -54,6 +53,14 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DevicePath = path
 
+	basicInfo := plat_linux.ReadBasicInfo(fd, path)
+
+	impl.Info.PartitionStyle = basicInfo.PartitionStyle
+	impl.Info.GptDiskId = basicInfo.GptDiskId
+	impl.Info.MbrDiskSignature = basicInfo.MbrSignature
+
+	
+
 	return impl, nil
 }
 
@@ -63,7 +70,7 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 	var names []string
 	var s unix.Stat_t
 
-	dfd, err := unix.Open("/sys/block", unix.O_RDONLY | unix.O_DIRECTORY, 666)
+	dfd, err := unix.Open("/sys/block", unix.O_RDONLY | unix.O_DIRECTORY, 0o666)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +88,11 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 		devPath += name
 		if (!strings.Contains(name, "loop")) && (unix.Stat(devPath, &s) == nil) {
 			if ((s.Mode & unix.S_IFMT) == unix.S_IFBLK) {
+				// As CD-ROM is not supported, exclude from probing cd-rom
+				if strings.Contains(name, "sr") {
+					continue
+				}
+
 				driveHandle, err := f.OpenByPath(devPath)
 				if err != nil {
 					log.Println(err)
