@@ -138,7 +138,7 @@ func getIdInfo(path string) (string, string, string, string) {
 	devMap := make(map[string]string)
 
 	for _, name := range entNames {
-		if strings.Contains(name, "-part") {
+		if strings.Contains(name, "-part") || strings.Contains(name, "wwn") { // wwn not used..?
 			continue
 		}
 
@@ -153,8 +153,12 @@ func getIdInfo(path string) (string, string, string, string) {
 		if path == devPath {
 			var temp string
 			delimit := strings.LastIndex(id, "_")
+			if delimit == -1 {
+				continue
+			}
 			temp, serial = id[:delimit], id[delimit+1:]
 			_, model, _ = strings.Cut(temp, "-")
+			break
 		}
 	}
 
