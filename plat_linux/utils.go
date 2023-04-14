@@ -5,7 +5,6 @@ package plat_linux
 
 import (
 	"log"
-	"path/filepath"
 	"unsafe"
 
 	"github.com/jc-lab/go-dparm/common"
@@ -14,10 +13,6 @@ import (
 	"github.com/jc-lab/go-dparm/diskfs/partition/mbr"
 
 	"golang.org/x/sys/unix"
-)
-
-const (
-	DIR_MAX_NUM = (1 << 32) - 1 // the max number of entry which directory can hold
 )
 
 type LinuxBasicInfo struct {
@@ -64,27 +59,7 @@ func ReadBasicInfo(fd int, path string) *LinuxBasicInfo {
 	return result
 }
 
-// Get Model, Serial from /dev/disk/by-id have dependency to udev..? 
-func getIdInfo(path string) []string {
-	result := make([]string, 0)
 
-	fd, err := unix.Open("/dev/disk/by-id", unix.O_RDONLY | unix.O_DIRECTORY, 0o666)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	devBuf := make([]byte, 256)
-	_, err = unix.ReadDirent(fd, devBuf)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	entNames := make([]string, 0)
-	_, _, entNames = unix.ParseDirent(devBuf, DIR_MAX_NUM, entNames)
-
-	devMap := make(map[string]string)
-
-}
 
 func readNullTerminatedAscii(buf []byte, offset int) string {
 	if offset <= 0 {

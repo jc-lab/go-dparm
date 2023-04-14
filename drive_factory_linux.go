@@ -5,12 +5,17 @@ package go_dparm
 
 import (
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/plat_linux"
 
 	"golang.org/x/sys/unix"
+)
+
+const (
+	DIR_MAX_NUM = (1 << 32) - 1 // the max number of entry which directory can hold
 )
 
 type LinuxDriveFactory struct {
@@ -59,7 +64,7 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 	impl.Info.GptDiskId = basicInfo.GptDiskId
 	impl.Info.MbrDiskSignature = basicInfo.MbrSignature
 
-	
+	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision = getIdInfo(path)
 
 	return impl, nil
 }
@@ -107,4 +112,51 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 
 func (f *LinuxDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
 	return plat_linux.EnumVolumes(f)
+}
+
+// Get model, serial from /dev/disk/by-id has dependency to udev..? 
+func getIdInfo(path string) (string, string, string, string) {
+	idPath := "/dev/disk/by-id"
+	var model, serial, vendor, rev string
+	_, _, _, _ = model, serial, vendor, rev // temporal not used error handling
+
+	fd, err := unix.Open(idPath, unix.O_RDONLY | unix.O_DIRECTORY, 0o666)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer unix.Close(fd)
+
+	devBuf := make([]byte, 256)
+	_, err = unix.ReadDirent(fd, devBuf)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	entNames := make([]string, 0)
+	_, _, entNames = unix.ParseDirent(devBuf, DIR_MAX_NUM, entNames)
+
+	devMap := make(map[string]string)
+
+	for _, name := range entNames {
+		if strings.Contains(name, "-part") {
+			continue
+		}
+
+		actualPath, err := filepath.EvalSymlinks(idPath + "/" + name)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		devMap[name] = actualPath
+	}
+
+	for id, devPath := range devMap {
+		if path == devPath {
+			var temp string
+			delimit := strings.LastIndex(id, "_")
+			temp, serial = id[:delimit], id[delimit+1:]
+			_, model, _ = strings.Cut(temp, "-")
+		}
+	}
+
+	return model, serial, vendor, rev
 }
