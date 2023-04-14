@@ -93,7 +93,7 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 		devPath += name
 		if (!strings.Contains(name, "loop")) && (unix.Stat(devPath, &s) == nil) {
 			if ((s.Mode & unix.S_IFMT) == unix.S_IFBLK) {
-				// As CD-ROM is not supported, exclude from probing cd-rom
+				// As CD-ROM is not supported, exclude cd-rom from probing
 				if strings.Contains(name, "sr") {
 					continue
 				}
