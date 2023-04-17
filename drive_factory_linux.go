@@ -166,15 +166,17 @@ func getIdInfo(path string) (string, string, string, string) {
 	soleDev := path[strings.LastIndex(path, "/") + 1:]
 	b, err := os.ReadFile("/sys/block/" + soleDev + "/device/vendor")
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 	}
-	vendor = string(b)
+	s := string(b)
+	vendor = strings.TrimSpace(s)
 
 	b, err = os.ReadFile("/sys/block/" + soleDev + "/device/rev")
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 	}
-	rev = string(b)
+	s = string(b)
+	rev = strings.TrimSpace(s)
 
 	return model, serial, vendor, rev
 }
