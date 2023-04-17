@@ -5,6 +5,7 @@ package go_dparm
 
 import (
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -113,11 +114,11 @@ func (f *LinuxDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
 	return plat_linux.EnumVolumes(f)
 }
 
-// Get model, serial from /dev/disk/by-id has dependency to udev..? 
 func getIdInfo(path string) (string, string, string, string) {
+	// Get model, serial from /dev/disk/by-id, has dependency to udev..? 
 	idPath := "/dev/disk/by-id"
 	var model, serial, vendor, rev string
-	_, _, _, _ = model, serial, vendor, rev // temporal variable not used error handling
+	_, _, _, _ = model, serial, vendor, rev // error handling for when value not found
 
 	fd, err := unix.Open(idPath, unix.O_RDONLY | unix.O_DIRECTORY, 0o666)
 	if err != nil {
@@ -160,6 +161,20 @@ func getIdInfo(path string) (string, string, string, string) {
 			break
 		}
 	}
+
+	// Get vendor name and rev version from /sys/block/{device name}/device?
+	soleDev := path[strings.LastIndex(path, "/") + 1:]
+	b, err := os.ReadFile("/sys/block/" + soleDev + "/device/vendor")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	vendor = string(b)
+
+	b, err = os.ReadFile("/sys/block/" + soleDev + "/device/rev")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	rev = string(b)
 
 	return model, serial, vendor, rev
 }
