@@ -79,6 +79,7 @@ func (s *LinuxNvmeDriverHandle) doNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
 	data.Rsvd1 = cmd.Rsvd1
 	data.Nsid = cmd.Nsid
 	data.Cdw2 = cmd.Cdw2
+	data.Cdw3 = cmd.Cdw3
 	data.Metadata = cmd.Metadata
 	data.Addr = uint64(cmd.Addr)
 	data.MetadataLen = cmd.MetadataLen
