@@ -59,7 +59,7 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 	identifyCmd := NvmeAdminCmd{}
 	identifyCmd.Opcode = NVME_ADMIN_OP_IDENTIFY
 	identifyCmd.Nsid = 0
-	identifyCmd.Addr = uintptr(unsafe.Pointer(&identifyBuf))
+	identifyCmd.Addr = uintptr(unsafe.Pointer(&identifyBuf[0]))
 	identifyCmd.DataLen = 4096
 	identifyCmd.Cdw10 = 1
 	identifyCmd.Cdw11 = 0

@@ -4,8 +4,10 @@
 package main
 
 import (
-	"github.com/jc-lab/go-dparm"
 	"log"
+
+	"github.com/jc-lab/go-dparm"
+	// "github.com/jc-lab/go-dparm/plat_linux"
 )
 
 func main() {
@@ -34,4 +36,20 @@ func main() {
 			log.Printf("VOLUME[%d]: %s", i, volume)
 		}
 	}
+
+	// ---- testing nvme passthrough command - only if nvme device exists ----
+
+	/* nvmeDrive := plat_linux.NewLinuxNvmeDriver()
+	nvmeFd, err := plat_linux.OpenDevice("/dev/nvme0n1")
+	if err != nil {
+		log.Println(err)
+	}
+
+	nvmeHandle, err := nvmeDrive.OpenByFd(nvmeFd)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	nvmeInfo := nvmeHandle.(*plat_linux.LinuxNvmeDriverHandle).GetIdentity()
+	log.Printf("Incoming data: %v\n", nvmeInfo) */
 }
