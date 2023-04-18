@@ -94,7 +94,7 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 		if (!strings.Contains(name, "loop")) && (unix.Stat(devPath, &s) == nil) {
 			if ((s.Mode & unix.S_IFMT) == unix.S_IFBLK) {
 				// As CD-ROM is not supported, exclude cd-rom from probing
-				if strings.Contains(name, "sr") || strings.Contains(name, "nvme") {
+				if strings.Contains(name, "sr") {
 					continue
 				}
 
