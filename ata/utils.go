@@ -91,8 +91,7 @@ func FixAtaStringOrder(data []byte, trimRight bool) []byte {
 	outLen := 0
 
 	for i := 0; i < len(data); i += 2 {
-		out[i] = data[i+1]
-		out[i+1] = data[i]
+		out[i], out[i+1] = data[i+1], data[i]
 		if out[i] != 0 {
 			outLen++
 		} else {

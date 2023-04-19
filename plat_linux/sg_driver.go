@@ -67,15 +67,10 @@ func NewSgDriver() *SgDriver {
 	return &SgDriver{}
 }
 
-func (d *SgDriver) OpenByPath(path string) (common.DriverHandle, error) {
-	fd, err := OpenDevice(path)
-	if err != nil {
-		return nil, err
-	}
-
+func (d *SgDriver) OpenByFd(fd int) (common.DriverHandle, error) {
 	driverHandle, err := d.openImpl(fd)
 	if err != nil {
-		_ = unix.Close(fd)
+		return nil, err
 	}
 	return driverHandle, err
 }

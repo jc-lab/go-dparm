@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/jc-lab/go-dparm/common"
@@ -15,9 +16,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const (
-	DIR_MAX_NUM = (1 << 32) - 1 // the max number of entry which directory can hold
-)
+var skipPat *regexp.Regexp = regexp.MustCompile(`nvme-\w*\.|-part|scsi|wwn`)
 
 type LinuxDriveFactory struct {
 	drivers []plat_linux.LinuxDriver
@@ -64,6 +63,16 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 	impl.Info.GptDiskId = basicInfo.GptDiskId
 	impl.Info.MbrDiskSignature = basicInfo.MbrSignature
 
+	for _, driver := range f.drivers {
+		driverHandle, err := driver.OpenByFd(fd)
+		if err == nil {
+			impl.dh = driverHandle
+			impl.Info.DrivingType = driverHandle.GetDrivingType()
+			impl.Info.DriverName = driverHandle.GetDriverName()
+			impl.init()
+		}
+	}
+
 	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision = getIdInfo(path)
 
 	return impl, nil
@@ -72,23 +81,16 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 	var results []common.DriveInfo
 
-	var names []string
 	var s unix.Stat_t
 
-	dfd, err := unix.Open("/sys/block", unix.O_RDONLY | unix.O_DIRECTORY, 0o666)
+	dir, err := os.ReadDir("/sys/block")
 	if err != nil {
-		return nil, err
+		log.Fatalln(err)
 	}
-	defer unix.Close(dfd)
 
-	buf := make([]byte, 4096)
-	entNum, err := unix.ReadDirent(dfd, buf)
-	if err != nil {
-		return nil, err
-	}
-	_, _, names = unix.ParseDirent(buf, entNum, names)
-
-	for _, name := range names {
+	
+	for _, ent := range dir {
+		name := ent.Name()
 		devPath := "/dev/"
 		devPath += name
 		if (!strings.Contains(name, "loop")) && (unix.Stat(devPath, &s) == nil) {
@@ -118,27 +120,17 @@ func getIdInfo(path string) (string, string, string, string) {
 	// Get model, serial from /dev/disk/by-id, has dependency to udev..? 
 	idPath := "/dev/disk/by-id"
 	var model, serial, vendor, rev string
-	_, _, _, _ = model, serial, vendor, rev // error handling for when value not found
 
-	fd, err := unix.Open(idPath, unix.O_RDONLY | unix.O_DIRECTORY, 0o666)
+	dir, err := os.ReadDir(idPath)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer unix.Close(fd)
-
-	devBuf := make([]byte, 65536)
-	_, err = unix.ReadDirent(fd, devBuf)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	entNames := make([]string, 0)
-	_, _, entNames = unix.ParseDirent(devBuf, DIR_MAX_NUM, entNames)
 
 	devMap := make(map[string]string)
 
-	for _, name := range entNames {
-		if strings.Contains(name, "-part") || strings.Contains(name, "wwn") { // wwn not used..?
+	for _, ent := range dir {
+		name := ent.Name()
+		if skipPat.MatchString(name) {
 			continue
 		}
 
@@ -165,18 +157,16 @@ func getIdInfo(path string) (string, string, string, string) {
 	// Get vendor name and rev version from /sys/block/{device name}/device?
 	soleDev := path[strings.LastIndex(path, "/") + 1:]
 	b, err := os.ReadFile("/sys/block/" + soleDev + "/device/vendor")
-	if err != nil {
-		log.Println(err)
+	if err == nil {
+		s := string(b)
+		vendor = strings.TrimSpace(s)
 	}
-	s := string(b)
-	vendor = strings.TrimSpace(s)
 
 	b, err = os.ReadFile("/sys/block/" + soleDev + "/device/rev")
-	if err != nil {
-		log.Println(err)
+	if err == nil {
+		s := string(b)
+		rev = strings.TrimSpace(s)
 	}
-	s = string(b)
-	rev = strings.TrimSpace(s)
 
 	return model, serial, vendor, rev
 }

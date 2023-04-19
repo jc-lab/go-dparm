@@ -35,9 +35,9 @@ func (p *DriveHandleImpl) init() error {
 		}
 		p.Info.AtaIdentity = identity
 
-		p.Info.Model = strings.Trim(string(ata.FixAtaStringOrder(identity.ModelNumber[:], true)), trimSet)
-		p.Info.FirmwareRevision = strings.Trim(string(ata.FixAtaStringOrder(identity.FirmwareRevision[:], true)), trimSet)
-		rawSerial := ata.FixAtaStringOrder(identity.SerialNumber[:], false)
+		p.Info.Model = strings.Trim(string(identity.ModelNumber[:]), trimSet)
+		p.Info.FirmwareRevision = strings.Trim(string(identity.FirmwareRevision[:]), trimSet)
+		rawSerial := identity.SerialNumber[:]
 		copy(p.Info.RawSerial[:], rawSerial)
 		p.Info.Serial = strings.Trim(string(rawSerial), trimSet)
 		p.Info.SmartEnabled = identity.CommandSetSupport.GetSmartCommands() && identity.CommandSetActive.GetSmartCommands()
