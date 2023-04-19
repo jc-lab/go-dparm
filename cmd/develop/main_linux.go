@@ -36,6 +36,8 @@ func main() {
 		}
 	}
 
+	// -- NVMe test code --
+	
 	/* handle, err = factory.OpenByPath("/dev/nvme0n1")
 	if err != nil {
 		log.Println(err)
