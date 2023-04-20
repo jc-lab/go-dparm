@@ -1,7 +1,10 @@
-name: Build Test
+name: Test
 on: push
 jobs:
-  build:
+  test:
+    strategy:
+      matrix:
+        os: [windows, linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -16,9 +19,12 @@ jobs:
 
       - run: mkdir -p output
 
-      - name: Build For Windows
+      - name: Tests For Windows
+        if: ${{ matrix.os == 'windows' }}
         run: |
           GOOS=windows GOARCH=amd64 go test github.com/jc-lab/go-dparm/...
-      - name: Build For Linux
+
+      - name: Tests For Linux
+        if: ${{ matrix.os == 'linux' }}
         run: |
           GOOS=linux GOARCH=amd64 go test github.com/jc-lab/go-dparm/...
