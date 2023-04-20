@@ -73,14 +73,6 @@ func (p *DriveHandleImpl) init() error {
 	p.Info.TcgRawFeatures = make(map[uint16][]byte)
 	_ = p.TcgDiscovery0()
 
-	p.Info.TcgRawFeatures = make(map[uint16][]byte)
-	_ = p.TcgDiscovery0()
-
-	return nil
-
-	p.Info.TcgRawFeatures = make(map[uint16][]byte)
-	_ = p.TcgDiscovery0()
-
 	return nil
 }
 

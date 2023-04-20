@@ -26,8 +26,8 @@ type SgDriver struct {
 
 type SgDriverHandle struct {
 	common.AtaDriverHandle
-	d *SgDriver
-	fd int
+	d        *SgDriver
+	fd       int
 	identity [512]byte
 }
 
@@ -35,7 +35,7 @@ func tfToLba(tf *ata.Tf) uint64 {
 	var lba24, lbah uint32
 	var lba64 uint64
 
-	lba24 = (uint32(tf.Lob.Lbah) << 16) | (uint32(tf.Lob.Lbam )<< 8) | (uint32(tf.Lob.Lbal))
+	lba24 = (uint32(tf.Lob.Lbah) << 16) | (uint32(tf.Lob.Lbam) << 8) | (uint32(tf.Lob.Lbal))
 	if tf.IsLba48 != 0 {
 		lbah = ((uint32(tf.Hob.Lbah) << 16) | (uint32(tf.Hob.Lbam) << 8) | (uint32(tf.Hob.Lbal)))
 	} else {
@@ -49,7 +49,7 @@ func tfInit(tf *ata.Tf, ataOp ata.OpCode, lba uint64, nsect uint) {
 	tf.Command = ataOp
 	tf.Dev = ata.ATA_USING_LBA
 	tf.Lob.Lbal = uint8(lba)
-	tf.Lob.Lbam = uint8(lba >>  8)
+	tf.Lob.Lbam = uint8(lba >> 8)
 	tf.Lob.Lbah = uint8(lba >> 16)
 	tf.Lob.Nsect = uint8(nsect)
 	if ata.IsNeedsLba48(ataOp, lba, nsect) {
@@ -59,7 +59,7 @@ func tfInit(tf *ata.Tf, ataOp ata.OpCode, lba uint64, nsect uint) {
 		tf.Hob.Lbam = uint8(lba >> 32)
 		tf.Hob.Lbal = uint8(lba >> 40)
 	} else {
-		tf.Dev |= uint8(lba >> 24) & 0x0f
+		tf.Dev |= uint8(lba>>24) & 0x0f
 	}
 }
 
@@ -76,19 +76,19 @@ func (d *SgDriver) OpenByFd(fd int) (common.DriverHandle, error) {
 }
 
 func (d *SgDriver) openImpl(fd int) (*SgDriverHandle, error) {
-	tf := &ata.Tf {
+	tf := &ata.Tf{
 		Command: ATA_IDENTIFY_DEVICE,
 	}
-	tf.Lob.Nsect = 1 
+	tf.Lob.Nsect = 1
 
 	dataBuffer := internal.NewAlignedBuffer(512, 512)
 
-	if err := d.doTaskFilecmd(fd, false, false, tf, dataBuffer.GetBuffer(), 3); err != nil {
+	if err := d.doTaskFileCmd(fd, false, false, tf, dataBuffer.GetBuffer(), 3); err != nil {
 		return nil, err
 	}
 
-	driverHandle := &SgDriverHandle {
-		d: d,
+	driverHandle := &SgDriverHandle{
+		d:  d,
 		fd: fd,
 	}
 	dataBuffer.ResetRead()
@@ -98,7 +98,7 @@ func (d *SgDriver) openImpl(fd int) (*SgDriverHandle, error) {
 	return driverHandle, nil
 }
 
-func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
+func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
 	strucOpts := internal.GetStrucOptions()
 	var rootError error = nil
 
@@ -227,7 +227,7 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
-			)	
+			)
 			if err != unix.Errno(0) {
 				rootError = err
 			} else {
@@ -282,7 +282,6 @@ func (d *SgDriver) doTaskFilecmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 	return rootError
 }
 
-
 func (s *SgDriverHandle) GetDriverName() string {
 	return "LinuxScsiDriver"
 }
@@ -304,7 +303,7 @@ func (s *SgDriverHandle) GetIdentity() []byte {
 }
 
 func (s *SgDriverHandle) DoTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
-	return s.d.doTaskFilecmd(s.fd, rw, dma, tf, data, timeoutSecs)
+	return s.d.doTaskFileCmd(s.fd, rw, dma, tf, data, timeoutSecs)
 }
 
 func (s *SgDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
