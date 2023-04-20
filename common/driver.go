@@ -30,11 +30,13 @@ type DriverHandle interface {
 }
 
 type AtaDriverHandle interface {
+	DriverHandle
 	GetIdentity() []byte
 	DoTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error
 }
 
 type NvmeDriverHandle interface {
+	DriverHandle
 	GetIdentity() []byte
 	NvmeGetLogPage(nsid uint32, logId uint32, rae bool, size int) ([]byte, error)
 }

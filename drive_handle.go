@@ -123,7 +123,23 @@ func (p *DriveHandleImpl) SecurityCommand(rw bool, dma bool, protocol uint8, com
 	if p.dh == nil {
 		return errors.New("Not supported")
 	}
-	return p.dh.SecurityCommand(rw, dma, protocol, comId, buffer, timeoutSecs)
+
+	err := p.dh.SecurityCommand(rw, dma, protocol, comId, buffer, timeoutSecs)
+	if err == nil {
+		return nil
+	}
+
+	ataDriver, ok := p.dh.(common.AtaDriverHandle)
+	if ok {
+		// ataDriver.DoTaskFileCmd()
+	}
+
+	nvmeDriver, ok := p.dh.(common.NvmeDriverHandle)
+	if ok {
+		// nvmeDriver.doNvmeAdminPassthru
+	}
+
+	return err
 }
 
 func (p *DriveHandleImpl) TcgDiscovery0() error {
