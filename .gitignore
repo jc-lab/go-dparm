@@ -13,3 +13,15 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# Configuration for vscode in project
+.vscode/
+
+# Output of strace
+*strace.txt
+
+# Configuration for vscode in project
+.vscode/
+
+# Output of strace
+*strace.txt

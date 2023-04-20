@@ -8,6 +8,7 @@ import (
 	"github.com/jc-lab/go-dparm/plat_win"
 	"golang.org/x/sys/windows"
 	"log"
+	"syscall"
 	"unsafe"
 )
 
@@ -35,9 +36,11 @@ func NewWindowsDriveFactory() *WindowsDriveFactory {
 }
 
 func NewSystemDriveFactory() common.DriveFactory {
+func NewSystemDriveFactory() common.DriveFactory {
 	return NewWindowsDriveFactory()
 }
 
+func (f *WindowsDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
 func (f *WindowsDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
 	handle, err := plat_win.OpenDevice(path)
 	if err != nil {
@@ -55,7 +58,9 @@ func (f *WindowsDriveFactory) OpenByPath(path string) (common.DriveHandle, error
 }
 
 func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (common.DriveHandle, error) {
+func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (common.DriveHandle, error) {
 	impl := &DriveHandleImpl{}
+	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DevicePath = path
 
@@ -84,6 +89,20 @@ func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (
 		}
 	}
 
+	storageQueryResp, err := plat_win.ReadStorageQuery(handle)
+	if err == nil && storageQueryResp != nil {
+		if impl.Info.Model == "" {
+			impl.Info.Model = storageQueryResp.ProductId
+		}
+		if impl.Info.Serial == "" {
+			impl.Info.Serial = storageQueryResp.SerialNumber
+		}
+
+		impl.Info.VendorId = storageQueryResp.VendorId
+		impl.Info.ProductRevision = storageQueryResp.ProductRevision
+	}
+
+	return impl, nil
 	storageQueryResp, err := plat_win.ReadStorageQuery(handle)
 	if err == nil && storageQueryResp != nil {
 		if impl.Info.Model == "" {
@@ -163,6 +182,48 @@ func (f *WindowsDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 	}
 
 	return results, nil
+}
+
+type VolumeInfoImpl struct {
+	Path        string
+	Filesystem  string
+	MountPoints []string
+	DiskExtents []DISK_EXTENT
+}
+
+type EnumVolumeContextImpl struct {
+	EnumVolumeContext
+	volumes []*VolumeInfoImpl
+}
+
+func (item *VolumeInfoImpl) ToVolumeInfo() common.VolumeInfo {
+	return common.VolumeInfo{
+		Path:        item.Path,
+		Filesystem:  item.Filesystem,
+		MountPoints: item.MountPoints,
+	}
+}
+
+func (ctx *EnumVolumeContextImpl) GetList() []common.VolumeInfo {
+	results := []common.VolumeInfo{}
+	for _, item := range ctx.volumes {
+		results = append(results, item.ToVolumeInfo())
+	}
+	return results
+}
+
+func (ctx *EnumVolumeContextImpl) FindVolumesByDrive(driveInfo *common.DriveInfo) []common.VolumeInfo {
+	results := []common.VolumeInfo{}
+	for _, volume := range ctx.volumes {
+		if len(volume.DiskExtents) <= 0 {
+			continue
+		}
+		diskExtent := volume.DiskExtents[0]
+		if int(diskExtent.DiskNumber) == driveInfo.WindowsDevNum {
+			results = append(results, volume.ToVolumeInfo())
+		}
+	}
+	return results
 }
 
 func (f *WindowsDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {

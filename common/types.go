@@ -36,6 +36,7 @@ type DriveInfo struct {
 	VendorId        string
 	ProductRevision string
 
+	LinuxDevNum 	int
 	WindowsDevNum   int
 	SmartEnabled    bool
 	AtaIdentity     *ata.IdentityDeviceData
