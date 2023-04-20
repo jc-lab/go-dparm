@@ -269,6 +269,9 @@ type PassthruCmd struct {
 	TimeoutMs   uint32 `struc:"uint32"`
 	Result      uint32 `struc:"uint32"`
 }
+
+type NvmeAdminCmd PassthruCmd
+
 type PassthruCmd64 struct {
 	Opcode      uint8  `struc:"uint8"`
 	Flags       uint8  `struc:"uint8"`

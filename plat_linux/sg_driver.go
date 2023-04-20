@@ -45,24 +45,6 @@ func tfToLba(tf *ata.Tf) uint64 {
 	return lba64
 }
 
-func tfInit(tf *ata.Tf, ataOp ata.OpCode, lba uint64, nsect uint) {
-	tf.Command = ataOp
-	tf.Dev = ata.ATA_USING_LBA
-	tf.Lob.Lbal = uint8(lba)
-	tf.Lob.Lbam = uint8(lba >> 8)
-	tf.Lob.Lbah = uint8(lba >> 16)
-	tf.Lob.Nsect = uint8(nsect)
-	if ata.IsNeedsLba48(ataOp, lba, nsect) {
-		tf.IsLba48 = 1
-		tf.Hob.Nsect = uint8(nsect >> 8)
-		tf.Hob.Lbal = uint8(lba >> 24)
-		tf.Hob.Lbam = uint8(lba >> 32)
-		tf.Hob.Lbal = uint8(lba >> 40)
-	} else {
-		tf.Dev |= uint8(lba>>24) & 0x0f
-	}
-}
-
 func NewSgDriver() *SgDriver {
 	return &SgDriver{}
 }

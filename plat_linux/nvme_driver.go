@@ -10,6 +10,8 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/jc-lab/go-dparm/common"
+	"github.com/jc-lab/go-dparm/internal"
+	"github.com/jc-lab/go-dparm/nvme"
 )
 
 type LinuxNvmeDriver struct {
@@ -64,7 +66,7 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 	identifyCmd.Cdw10 = 1
 	identifyCmd.Cdw11 = 0
 
-	result := s.doNvmeAdminPassthru(&identifyCmd)
+	result := s.DoNvmeAdminPassthru(&identifyCmd)
 	if result != nil {
 		return nil, result
 	}
@@ -72,7 +74,7 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 	return identifyBuf, nil
 }
 
-func (s *LinuxNvmeDriverHandle) doNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
+func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
 	data := NvmeIoctlAdminCmd{}
 	data.Opcode = cmd.Opcode
 	data.Flags = cmd.Flags
@@ -104,7 +106,7 @@ func (s *LinuxNvmeDriverHandle) doNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
 	return nil
 }
 
-func (s *LinuxNvmeDriverHandle) doNvmeIoPassthru(cmd *NvmePassthruCmd) error {
+func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *NvmePassthruCmd) error {
 	data := NvmeIoctlPassthruCmd{}
 	data.Opcode = cmd.Opcode
 	data.Flags = cmd.Flags
@@ -181,6 +183,51 @@ func (s *LinuxNvmeDriverHandle) Close() {
 
 func (s *LinuxNvmeDriverHandle) GetIdentity() []byte {
 	return s.identity[:]
+}
+
+func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {
+	var rootError error
+
+	offset, xferLen := 0, dataSize
+	lsp, lpo, lsi := nvme.NVME_NO_LOG_LSP, offset, 0
+
+	dataBuffer := make([]byte, dataSize)
+
+	for {
+		if offset >= dataSize {
+			break
+		}
+
+		xferLen = dataSize - offset
+		if (xferLen > 4096) {
+			xferLen = 4096
+		}
+
+		numd := uint32((dataSize >> 2) - 1)
+		numdh := uint32(((numd >> 16)) & 0xffff)
+		numdl := uint32(numd & 0xffff)
+		cdw10 := logId | (numdl << 16) | uint32(internal.Ternary(rae, (1 << 15), 0)) | (uint32(lsp) << 8)
+
+		cmd := &NvmeAdminCmd{}
+		cmd.Opcode = NVME_ADMIN_OP_GET_LOG_PAGE
+		cmd.Nsid = nsid
+		cmd.Addr = uintptr(unsafe.Pointer(&dataBuffer[0]))
+		cmd.DataLen = uint32(dataSize)
+		cmd.Cdw10 = cdw10
+		cmd.Cdw11 = numdh | uint32(lsi << 16)
+		cmd.Cdw12 = uint32(lpo)
+		cmd.Cdw13 = uint32(lpo >> 32)
+		cmd.Cdw14 = 0
+
+		rootError = s.DoNvmeAdminPassthru(cmd)
+		if rootError == nil {
+			return dataBuffer, nil
+		}
+
+		offset += xferLen
+	}
+
+	return nil, rootError
 }
 
 func (s *LinuxNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
