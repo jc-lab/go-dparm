@@ -399,7 +399,7 @@ type IdentifyController struct {
 	Ctrattr   uint8      `struc:"uint8"`
 	Msdbd     uint8      `struc:"uint8"`
 	Rsvd1804  [244]uint8 `struc:"[244]uint8"`
-	psd       [32]IdentifyPowerState
+	Psd       [32]IdentifyPowerState
 	Vs        [1024]uint8 `struc:"[1024]uint8"`
 }
 
