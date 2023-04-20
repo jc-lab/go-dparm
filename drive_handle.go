@@ -61,7 +61,6 @@ func (p *DriveHandleImpl) init() error {
 			return err
 		}
 		p.Info.NvmeIdentity = identity
-
 		p.Info.Model = strings.Trim(string(identity.Mn[:]), trimSet)
 		p.Info.FirmwareRevision = strings.Trim(string(identity.Fr[:]), trimSet)
 		copy(p.Info.RawSerial[:], identity.Sn[:])
@@ -70,6 +69,14 @@ func (p *DriveHandleImpl) init() error {
 		p.Info.IsSsd = true
 		p.Info.SsdCheckWeight = 0
 	}
+
+	p.Info.TcgRawFeatures = make(map[uint16][]byte)
+	_ = p.TcgDiscovery0()
+
+	p.Info.TcgRawFeatures = make(map[uint16][]byte)
+	_ = p.TcgDiscovery0()
+
+	return nil
 
 	p.Info.TcgRawFeatures = make(map[uint16][]byte)
 	_ = p.TcgDiscovery0()

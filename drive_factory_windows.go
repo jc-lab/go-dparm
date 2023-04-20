@@ -8,6 +8,7 @@ import (
 	"github.com/jc-lab/go-dparm/plat_win"
 	"golang.org/x/sys/windows"
 	"log"
+	"syscall"
 	"unsafe"
 )
 
@@ -35,9 +36,11 @@ func NewWindowsDriveFactory() *WindowsDriveFactory {
 }
 
 func NewSystemDriveFactory() common.DriveFactory {
+func NewSystemDriveFactory() common.DriveFactory {
 	return NewWindowsDriveFactory()
 }
 
+func (f *WindowsDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
 func (f *WindowsDriveFactory) OpenByPath(path string) (common.DriveHandle, error) {
 	handle, err := plat_win.OpenDevice(path)
 	if err != nil {
@@ -55,7 +58,9 @@ func (f *WindowsDriveFactory) OpenByPath(path string) (common.DriveHandle, error
 }
 
 func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (common.DriveHandle, error) {
+func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (common.DriveHandle, error) {
 	impl := &DriveHandleImpl{}
+	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DevicePath = path
 
@@ -84,6 +89,20 @@ func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (
 		}
 	}
 
+	storageQueryResp, err := plat_win.ReadStorageQuery(handle)
+	if err == nil && storageQueryResp != nil {
+		if impl.Info.Model == "" {
+			impl.Info.Model = storageQueryResp.ProductId
+		}
+		if impl.Info.Serial == "" {
+			impl.Info.Serial = storageQueryResp.SerialNumber
+		}
+
+		impl.Info.VendorId = storageQueryResp.VendorId
+		impl.Info.ProductRevision = storageQueryResp.ProductRevision
+	}
+
+	return impl, nil
 	storageQueryResp, err := plat_win.ReadStorageQuery(handle)
 	if err == nil && storageQueryResp != nil {
 		if impl.Info.Model == "" {

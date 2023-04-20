@@ -4,27 +4,27 @@
 package plat_linux
 
 import (
+	"github.com/diskfs/go-diskfs"
+	"github.com/diskfs/go-diskfs/partition/gpt"
+	"github.com/diskfs/go-diskfs/partition/mbr"
+	"github.com/jc-lab/go-dparm/common"
+	"github.com/jc-lab/go-dparm/internal/direct_mbr"
 	"log"
 	"unsafe"
-
-	"github.com/jc-lab/go-dparm/common"
-	"github.com/jc-lab/go-dparm/diskfs"
-	"github.com/jc-lab/go-dparm/diskfs/partition/gpt"
-	"github.com/jc-lab/go-dparm/diskfs/partition/mbr"
 
 	"golang.org/x/sys/unix"
 )
 
 type LinuxBasicInfo struct {
-	PartitionStyle	common.PartitionStyle      
-	DiskGeometry 	unix.HDGeometry
-	MbrSignature 	uint32
-	GptDiskId 		string
+	PartitionStyle common.PartitionStyle
+	DiskGeometry   unix.HDGeometry
+	MbrSignature   uint32
+	GptDiskId      string
 }
 
 func OpenDevice(path string) (int, error) {
-	return unix.Open(path, unix.O_RDWR | unix.O_NONBLOCK, 
-		uint32(unix.S_IRUSR | unix.S_IWUSR | unix.S_IRGRP | unix.S_IWGRP | unix.S_IROTH | unix.S_IWOTH))
+	return unix.Open(path, unix.O_RDWR|unix.O_NONBLOCK,
+		uint32(unix.S_IRUSR|unix.S_IWUSR|unix.S_IRGRP|unix.S_IWGRP|unix.S_IROTH|unix.S_IWOTH))
 }
 
 func ReadBasicInfo(fd int, path string) *LinuxBasicInfo {
@@ -51,15 +51,16 @@ func ReadBasicInfo(fd int, path string) *LinuxBasicInfo {
 		result.GptDiskId = pt.GUID
 	case *mbr.Table:
 		result.PartitionStyle = common.PartitionStyleMbr
-		result.MbrSignature = pt.MbrIdentifier
+		tableEx, err := direct_mbr.Read(dev.File, int(dev.LogicalBlocksize), int(dev.PhysicalBlocksize))
+		if err == nil {
+			result.MbrSignature = tableEx.MbrIdentifier
+		}
 	default:
 		log.Printf("%s: %T\n", "Unknown partition type", pt)
 	}
 
 	return result
 }
-
-
 
 func readNullTerminatedAscii(buf []byte, offset int) string {
 	if offset <= 0 {
