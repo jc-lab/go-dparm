@@ -3,6 +3,7 @@ module github.com/jc-lab/go-dparm
 go 1.18
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/diskfs/go-diskfs v1.3.0
 	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40
 	github.com/stretchr/testify v1.8.2
@@ -10,7 +11,6 @@ require (
 )
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect

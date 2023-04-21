@@ -5,8 +5,11 @@ package main
 
 import (
 	"log"
+	"unsafe"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jc-lab/go-dparm"
+	"github.com/jc-lab/go-dparm/nvme"
 )
 
 func main() {
@@ -38,7 +41,7 @@ func main() {
 
 	// -- NVMe test code --
 	
-	/* handle, err = factory.OpenByPath("/dev/nvme0n1")
+	handle, err = factory.OpenByPath("/dev/nvme0n1")
 	if err != nil {
 		log.Println(err)
 	} else {
@@ -46,5 +49,11 @@ func main() {
 	}
 	
 	info := handle.GetDriveInfo()
-	log.Println(info) */
+	spew.Dump(info)
+
+	logPage, err := handle.NvmeGetLogPage(0xffffffff, uint32(nvme.NVME_GET_LOG_PAGE_SMART), false, int(unsafe.Sizeof(nvme.SmartLogPage{})))
+	if err != nil {
+		log.Println(err)
+	}
+	spew.Dump(logPage)
 }

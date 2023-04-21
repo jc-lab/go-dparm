@@ -433,7 +433,7 @@ type SmartLogPage struct {
 	AvailableSpare                            uint8      `struc:"uint8"`
 	AvailableSparehreshold                    uint8      `struc:"uint8"`
 	PercentageUsed                            uint8      `struc:"uint8"`
-	Rev01                                     [16]uint8  `struc:"[26]uint8"`
+	Rev01                                     [26]uint8  `struc:"[26]uint8"`
 	DataUnitsRead                             [16]uint8  `struc:"[16]uint8"`
 	DataUnitsWritten                          [16]uint8  `struc:"[16]uint8"`
 	HostReadCommands                          [16]uint8  `struc:"[16]uint8"`
