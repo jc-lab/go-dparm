@@ -6,9 +6,10 @@ package plat_win
 import (
 	"errors"
 	"fmt"
+	"unsafe"
+
 	"github.com/jc-lab/go-dparm/common"
 	"golang.org/x/sys/windows"
-	"unsafe"
 )
 
 type WindowsNvmeDriver struct {

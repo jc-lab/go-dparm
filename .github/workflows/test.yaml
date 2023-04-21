@@ -1,0 +1,25 @@
+name: Test
+on: push
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.19
+
+      - name: Display Go version
+        run: go version
+
+      - run: mkdir -p output
+
+      - name: Tests In ${{ matrix.os }}
+        run: |
+          go test github.com/jc-lab/go-dparm/...

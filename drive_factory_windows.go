@@ -4,11 +4,12 @@
 package go_dparm
 
 import (
+	"log"
+	"unsafe"
+
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/plat_win"
 	"golang.org/x/sys/windows"
-	"log"
-	"unsafe"
 )
 
 var GUID_DEVINTERFACE_DISK = windows.GUID{

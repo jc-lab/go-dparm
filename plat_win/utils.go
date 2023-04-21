@@ -172,6 +172,7 @@ func readDeviceIoControl(handle windows.Handle, ioctl uint32, inBuffer *byte, in
 	return nil, errno
 }
 
+
 func copyToPointer(dest unsafe.Pointer, src []byte, len int) {
 	destRef := unsafe.Slice((*byte)(dest), len)
 	copy(destRef, src[:len])

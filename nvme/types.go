@@ -235,60 +235,63 @@ const (
 )
 
 type UserIo struct {
-	Opcode   uint8  `struc:"uint8"`
-	Flags    uint8  `struc:"uint8"`
-	Control  uint16 `struc:"uint16"`
-	Nblocks  uint16 `struc:"uint16"`
-	Rsvd     uint16 `struc:"uint16"`
-	Metadata uint64 `struc:"uint64"`
-	Addr     uint64 `struc:"uint64"`
-	Slba     uint64 `struc:"uint64"`
-	Dsmgmt   uint32 `struc:"uint32"`
-	Reftag   uint32 `struc:"uint32"`
-	Apptag   uint16 `struc:"uint16"`
-	Appmask  uint16 `struc:"uint16"`
+	Opcode   uint8
+	Flags    uint8
+	Control  uint16
+	Nblocks  uint16
+	Rsvd     uint16
+	Metadata uint64
+	Addr     uintptr
+	Slba     uint64
+	Dsmgmt   uint32
+	Reftag   uint32
+	Apptag   uint16
+	Appmask  uint16
 }
 
 type PassthruCmd struct {
-	Opcode      uint8  `struc:"uint8"`
-	Flags       uint8  `struc:"uint8"`
-	Rsvd1       uint16 `struc:"uint16"`
-	Nsid        uint32 `struc:"uint32"`
-	Cdw2        uint32 `struc:"uint32"`
-	Cdw3        uint32 `struc:"uint32"`
-	Metadata    uint64 `struc:"uint64"`
-	Addr        uint64 `struc:"uint64"`
-	MetadataLen uint32 `struc:"uint32"`
-	DataLen     uint32 `struc:"uint32"`
-	Cdw10       uint32 `struc:"uint32"`
-	Cdw11       uint32 `struc:"uint32"`
-	Cdw12       uint32 `struc:"uint32"`
-	Cdw13       uint32 `struc:"uint32"`
-	Cdw14       uint32 `struc:"uint32"`
-	Cdw15       uint32 `struc:"uint32"`
-	TimeoutMs   uint32 `struc:"uint32"`
-	Result      uint32 `struc:"uint32"`
+	Opcode      uint8
+	Flags       uint8
+	Rsvd1       uint16
+	Nsid        uint32
+	Cdw2        uint32
+	Cdw3        uint32
+	Metadata    uint64
+	Addr        uintptr
+	MetadataLen uint32
+	DataLen     uint32
+	Cdw10       uint32
+	Cdw11       uint32
+	Cdw12       uint32
+	Cdw13       uint32
+	Cdw14       uint32
+	Cdw15       uint32
+	TimeoutMs   uint32
+	Result      uint32
 }
+
+type NvmeAdminCmd PassthruCmd
+
 type PassthruCmd64 struct {
-	Opcode      uint8  `struc:"uint8"`
-	Flags       uint8  `struc:"uint8"`
-	Rsvd1       uint16 `struc:"uint16"`
-	Nsid        uint32 `struc:"uint32"`
-	Cdw2        uint32 `struc:"uint32"`
-	Cdw3        uint32 `struc:"uint32"`
-	Metadata    uint64 `struc:"uint64"`
-	Addr        uint64 `struc:"uint64"`
-	MetadataLen uint32 `struc:"uint32"`
-	DataLen     uint32 `struc:"uint32"`
-	Cdw10       uint32 `struc:"uint32"`
-	Cdw11       uint32 `struc:"uint32"`
-	Cdw12       uint32 `struc:"uint32"`
-	Cdw13       uint32 `struc:"uint32"`
-	Cdw14       uint32 `struc:"uint32"`
-	Cdw15       uint32 `struc:"uint32"`
-	TimeoutMs   uint32 `struc:"uint32"`
-	Rsvd2       uint32 `struc:"uint32"`
-	Result      uint64 `struc:"uint64"`
+	Opcode      uint8
+	Flags       uint8
+	Rsvd1       uint16
+	Nsid        uint32
+	Cdw2        uint32
+	Cdw3        uint32
+	Metadata    uint64
+	Addr        uintptr
+	MetadataLen uint32
+	DataLen     uint32
+	Cdw10       uint32
+	Cdw11       uint32
+	Cdw12       uint32
+	Cdw13       uint32
+	Cdw14       uint32
+	Cdw15       uint32
+	TimeoutMs   uint32
+	Rsvd2       uint32
+	Result      uint64
 }
 
 type IdentifyPowerState struct {
@@ -425,26 +428,26 @@ type SanitizeLogPage struct {
  * 5.14.1.2 SMART/Health Information (Log Identifier 02h)
  */
 type SmartLogPage struct {
-	CriticalWarning                           uint8      `struc:"uint8"`
-	Compositeemperature                       uint16     `struc:"uint16"`
-	AvailableSpare                            uint8      `struc:"uint8"`
-	AvailableSparehreshold                    uint8      `struc:"uint8"`
-	PercentageUsed                            uint8      `struc:"uint8"`
-	Rev01                                     [16]uint8  `struc:"[26]uint8"`
-	DataUnitsRead                             [16]uint8  `struc:"[16]uint8"`
-	DataUnitsWritten                          [16]uint8  `struc:"[16]uint8"`
-	HostReadCommands                          [16]uint8  `struc:"[16]uint8"`
-	HostWriteCommands                         [16]uint8  `struc:"[16]uint8"`
-	ControllerBusyime                         [16]uint8  `struc:"[16]uint8"`
-	PowerCycles                               [16]uint8  `struc:"[16]uint8"`
-	PowerOnHours                              [16]uint8  `struc:"[16]uint8"`
-	UnsafeShutdowns                           [16]uint8  `struc:"[16]uint8"`
-	MediaAndDataIntegrityErrors               [16]uint8  `struc:"[16]uint8"`
-	NumberOfErrorInformationLogEntries        [16]uint8  `struc:"[16]uint8"`
-	WarningCompositeemperatureime             [4]uint8   `struc:"[4]uint8"`
-	CriticalCompositeemperatureime            [4]uint8   `struc:"[4]uint8"`
-	TemperatureSensor                         [8]uint16  `struc:"[8]uint16"`
-	ThermalManagementemperatureransitionCount [2]uint32  `struc:"[2]uint32"`
-	TotalimeForhermalManagementemperature     [2]uint32  `struc:"[2]uint32"`
-	RevRemaining                              [280]uint8 `struc:"[280]uint8"`
+	CriticalWarning                             uint8      `struc:"uint8"`
+	CompositeTemperature                        uint16     `struc:"uint16"`
+	AvailableSpare                              uint8      `struc:"uint8"`
+	AvailableSpareThreshold                     uint8      `struc:"uint8"`
+	PercentageUsed                              uint8      `struc:"uint8"`
+	Rev01                                       [26]uint8  `struc:"[26]uint8"`
+	DataUnitsRead                               [16]uint8  `struc:"[16]uint8"`
+	DataUnitsWritten                            [16]uint8  `struc:"[16]uint8"`
+	HostReadCommands                            [16]uint8  `struc:"[16]uint8"`
+	HostWriteCommands                           [16]uint8  `struc:"[16]uint8"`
+	ControllerBusyTime                          [16]uint8  `struc:"[16]uint8"`
+	PowerCycles                                 [16]uint8  `struc:"[16]uint8"`
+	PowerOnHours                                [16]uint8  `struc:"[16]uint8"`
+	UnsafeShutdowns                             [16]uint8  `struc:"[16]uint8"`
+	MediaAndDataIntegrityErrors                 [16]uint8  `struc:"[16]uint8"`
+	NumberOfErrorInformationLogEntries          [16]uint8  `struc:"[16]uint8"`
+	WarningCompositeTemperatureTime             [4]uint8   `struc:"[4]uint8"`
+	CriticalCompositeTemperatureTime            [4]uint8   `struc:"[4]uint8"`
+	TemperatureSensor                           [8]uint16  `struc:"[8]uint16"`
+	ThermalManagementTemperatureTransitionCount [2]uint32  `struc:"[2]uint32"`
+	TotalimeForThermalManagementTemperature     [2]uint32  `struc:"[2]uint32"`
+	RevRemaining                                [280]uint8 `struc:"[280]uint8"`
 }

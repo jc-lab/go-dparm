@@ -1,4 +1,4 @@
-# go-dparm
+# github.com/jc-lab/go-dparm
 
 Control ATA/NVMe and TCG protocol
 

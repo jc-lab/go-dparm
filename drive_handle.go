@@ -9,6 +9,7 @@ import (
 	"github.com/jc-lab/go-dparm/tcg"
 	"github.com/lunixbochs/struc"
 	"strings"
+	"unsafe"
 )
 
 const trimSet = " \t\r\n\x00"
@@ -35,9 +36,9 @@ func (p *DriveHandleImpl) init() error {
 		}
 		p.Info.AtaIdentity = identity
 
-		p.Info.Model = strings.Trim(string(ata.FixAtaStringOrder(identity.ModelNumber[:], true)), trimSet)
-		p.Info.FirmwareRevision = strings.Trim(string(ata.FixAtaStringOrder(identity.FirmwareRevision[:], true)), trimSet)
-		rawSerial := ata.FixAtaStringOrder(identity.SerialNumber[:], false)
+		p.Info.Model = strings.Trim(string(identity.ModelNumber[:]), trimSet)
+		p.Info.FirmwareRevision = strings.Trim(string(identity.FirmwareRevision[:]), trimSet)
+		rawSerial := identity.SerialNumber[:]
 		copy(p.Info.RawSerial[:], rawSerial)
 		p.Info.Serial = strings.Trim(string(rawSerial), trimSet)
 		p.Info.SmartEnabled = identity.CommandSetSupport.GetSmartCommands() && identity.CommandSetActive.GetSmartCommands()
@@ -61,7 +62,6 @@ func (p *DriveHandleImpl) init() error {
 			return err
 		}
 		p.Info.NvmeIdentity = identity
-
 		p.Info.Model = strings.Trim(string(identity.Mn[:]), trimSet)
 		p.Info.FirmwareRevision = strings.Trim(string(identity.Fr[:]), trimSet)
 		copy(p.Info.RawSerial[:], identity.Sn[:])
@@ -124,7 +124,41 @@ func (p *DriveHandleImpl) SecurityCommand(rw bool, dma bool, protocol uint8, com
 	if p.dh == nil {
 		return errors.New("Not supported")
 	}
-	return p.dh.SecurityCommand(rw, dma, protocol, comId, buffer, timeoutSecs)
+
+	err := p.dh.SecurityCommand(rw, dma, protocol, comId, buffer, timeoutSecs)
+	if err == nil {
+		return nil
+	}
+
+	ataDriver, ok := p.dh.(common.AtaDriverHandle)
+	if ok {
+		tf := &ata.Tf{}
+		tf.Lob.Feat = protocol
+		tf.Lob.Nsect = uint8(len(buffer) / 512)
+		if rw {
+			tf.Command = internal.Ternary(dma, ata.ATA_OP_TRUSTED_SEND_DMA, ata.ATA_OP_TRUSTED_SEND)
+		} else {
+			tf.Command = internal.Ternary(dma, ata.ATA_OP_TRUSTED_RECV_DMA, ata.ATA_OP_TRUSTED_RECV)
+		}
+		tf.Lob.Lbam = uint8(comId)
+		tf.Lob.Lbah = uint8(comId >> uint8(8))
+
+		return ataDriver.DoTaskFileCmd(rw, dma, tf, buffer, timeoutSecs)
+	}
+
+	nvmeDriver, ok := p.dh.(common.NvmeDriverHandle)
+	if ok {
+		cmd := &nvme.NvmeAdminCmd{}
+		cmd.Opcode = uint8(internal.Ternary(rw, nvme.NVME_ADMIN_OP_SECURITY_SEND, nvme.NVME_ADMIN_OP_SECURITY_RECV))
+		cmd.Addr = uintptr(unsafe.Pointer(&buffer[0]))
+		cmd.DataLen = uint32(len(buffer))
+		cmd.Cdw10 = ((uint32(protocol) & 0xff) << 24) | ((uint32(comId) & 0xffff) << 8)
+		cmd.Cdw11 = uint32(len(buffer))
+
+		return nvmeDriver.DoNvmeAdminPassthru(cmd)
+	}
+
+	return err
 }
 
 func (p *DriveHandleImpl) TcgDiscovery0() error {
