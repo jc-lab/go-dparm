@@ -2,14 +2,15 @@ package go_dparm
 
 import (
 	"errors"
+	"strings"
+	"unsafe"
+
 	"github.com/jc-lab/go-dparm/ata"
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/internal"
 	"github.com/jc-lab/go-dparm/nvme"
 	"github.com/jc-lab/go-dparm/tcg"
 	"github.com/lunixbochs/struc"
-	"strings"
-	"unsafe"
 )
 
 const trimSet = " \t\r\n\x00"

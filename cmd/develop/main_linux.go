@@ -8,7 +8,7 @@ import (
 	"unsafe"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/jc-lab/go-dparm"
+	go_dparm "github.com/jc-lab/go-dparm"
 	"github.com/jc-lab/go-dparm/nvme"
 )
 
@@ -40,14 +40,14 @@ func main() {
 	}
 
 	// -- NVMe test code --
-	
+
 	handle, err = factory.OpenByPath("/dev/nvme0n1")
 	if err != nil {
 		log.Println(err)
 	} else {
 		_ = handle
 	}
-	
+
 	info := handle.GetDriveInfo()
 	spew.Dump(info)
 

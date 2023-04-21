@@ -20,8 +20,8 @@ type LinuxNvmeDriver struct {
 
 type LinuxNvmeDriverHandle struct {
 	common.NvmeDriverHandle
-	fd int
-	ns_id int
+	fd       int
+	ns_id    int
 	identity [4096]byte
 }
 
@@ -58,10 +58,10 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 	}
 
 	identifyBuf := make([]byte, 4096)
-	identifyCmd := NvmeAdminCmd{}
-	identifyCmd.Opcode = NVME_ADMIN_OP_IDENTIFY
+	identifyCmd := nvme.NvmeAdminCmd{}
+	identifyCmd.Opcode = uint8(nvme.NVME_ADMIN_OP_IDENTIFY)
 	identifyCmd.Nsid = 0
-	identifyCmd.Addr = uintptr(unsafe.Pointer(&identifyBuf[0]))
+	identifyCmd.Addr = *(*uint64)(unsafe.Pointer(&identifyBuf[0]))
 	identifyCmd.DataLen = 4096
 	identifyCmd.Cdw10 = 1
 	identifyCmd.Cdw11 = 0
@@ -74,8 +74,8 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 	return identifyBuf, nil
 }
 
-func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
-	data := NvmeIoctlAdminCmd{}
+func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) error {
+	data := nvme.NvmeAdminCmd{}
 	data.Opcode = cmd.Opcode
 	data.Flags = cmd.Flags
 	data.Rsvd1 = cmd.Rsvd1
@@ -106,8 +106,8 @@ func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *NvmeAdminCmd) error {
 	return nil
 }
 
-func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *NvmePassthruCmd) error {
-	data := NvmeIoctlPassthruCmd{}
+func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *nvme.PassthruCmd) error {
+	data := nvme.PassthruCmd{}
 	data.Opcode = cmd.Opcode
 	data.Flags = cmd.Flags
 	data.Rsvd1 = cmd.Rsvd1
@@ -138,8 +138,8 @@ func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *NvmePassthruCmd) error {
 	return nil
 }
 
-func (s *LinuxNvmeDriverHandle) DoNvmeIo(io *NvmeUserIo) error {
-	data := NvmeIoctlUserIo{}
+func (s *LinuxNvmeDriverHandle) DoNvmeIo(io *nvme.UserIo) error {
+	data := nvme.UserIo{}
 	data.Opcode = io.Opcode
 	data.Flags = io.Flags
 	data.Control = io.Control
@@ -161,7 +161,7 @@ func (s *LinuxNvmeDriverHandle) DoNvmeIo(io *NvmeUserIo) error {
 	if err != unix.Errno(0) {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -199,22 +199,22 @@ func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bo
 		}
 
 		xferLen = dataSize - offset
-		if (xferLen > 4096) {
+		if xferLen > 4096 {
 			xferLen = 4096
 		}
 
 		numd := uint32((dataSize >> 2) - 1)
-		numdh := uint32(((numd >> 16)) & 0xffff)
+		numdh := uint32((numd >> 16) & 0xffff)
 		numdl := uint32(numd & 0xffff)
-		cdw10 := logId | (numdl << 16) | uint32(internal.Ternary(rae, (1 << 15), 0)) | (uint32(lsp) << 8)
+		cdw10 := logId | (numdl << 16) | uint32(internal.Ternary(rae, (1<<15), 0)) | (uint32(lsp) << 8)
 
-		cmd := &NvmeAdminCmd{}
-		cmd.Opcode = NVME_ADMIN_OP_GET_LOG_PAGE
+		cmd := &nvme.NvmeAdminCmd{}
+		cmd.Opcode = uint8(nvme.NVME_ADMIN_OP_GET_LOG_PAGE)
 		cmd.Nsid = nsid
-		cmd.Addr = uintptr(unsafe.Pointer(&dataBuffer[0]))
+		cmd.Addr = *(*uint64)(unsafe.Pointer(&dataBuffer[0]))
 		cmd.DataLen = uint32(dataSize)
 		cmd.Cdw10 = cdw10
-		cmd.Cdw11 = numdh | uint32(lsi << 16)
+		cmd.Cdw11 = numdh | uint32(lsi<<16)
 		cmd.Cdw12 = uint32(lpo)
 		cmd.Cdw13 = uint32(lpo >> 32)
 		cmd.Cdw14 = 0

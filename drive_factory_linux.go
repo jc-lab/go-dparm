@@ -64,7 +64,7 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 	impl.Info.MbrDiskSignature = basicInfo.MbrSignature
 
 	// Try to get incomplete data first in case of inquiry failure..
-	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision = getIdInfo(path) 
+	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision = getIdInfo(path)
 
 	for _, driver := range f.drivers {
 		driverHandle, err := driver.OpenByFd(fd)
@@ -89,13 +89,12 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 		log.Fatalln(err)
 	}
 
-	
 	for _, ent := range dir {
 		name := ent.Name()
 		devPath := "/dev/"
 		devPath += name
 		if (!strings.Contains(name, "loop")) && (unix.Stat(devPath, &s) == nil) {
-			if ((s.Mode & unix.S_IFMT) == unix.S_IFBLK) {
+			if (s.Mode & unix.S_IFMT) == unix.S_IFBLK {
 				// As CD-ROM is not supported, exclude cd-rom from probing
 				if strings.Contains(name, "sr") {
 					continue
@@ -118,7 +117,7 @@ func (f *LinuxDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
 }
 
 func getIdInfo(path string) (string, string, string, string) {
-	// Get model, serial from /dev/disk/by-id, has dependency to udev..? 
+	// Get model, serial from /dev/disk/by-id, has dependency to udev..?
 	idPath := "/dev/disk/by-id"
 	var model, serial, vendor, rev string
 
@@ -156,7 +155,7 @@ func getIdInfo(path string) (string, string, string, string) {
 	}
 
 	// Get vendor name and rev version from /sys/block/{device name}/device?
-	soleDev := path[strings.LastIndex(path, "/") + 1:]
+	soleDev := path[strings.LastIndex(path, "/")+1:]
 	b, err := os.ReadFile("/sys/block/" + soleDev + "/device/vendor")
 	if err == nil {
 		s := string(b)
