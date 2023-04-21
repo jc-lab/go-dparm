@@ -195,7 +195,7 @@ func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bo
 
 	for {
 		if offset >= dataSize {
-			break
+			return dataBuffer, rootError
 		}
 
 		xferLen = dataSize - offset
@@ -226,8 +226,6 @@ func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bo
 
 		offset += xferLen
 	}
-
-	return nil, rootError
 }
 
 func (s *LinuxNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
