@@ -4,13 +4,14 @@
 package plat_linux
 
 import (
+	"errors"
 	"fmt"
+	common_nvme "github.com/jc-lab/go-dparm/common/nvme"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
 
 	"github.com/jc-lab/go-dparm/common"
-	"github.com/jc-lab/go-dparm/internal"
 	"github.com/jc-lab/go-dparm/nvme"
 )
 
@@ -61,7 +62,7 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 	identifyCmd := nvme.NvmeAdminCmd{}
 	identifyCmd.Opcode = uint8(nvme.NVME_ADMIN_OP_IDENTIFY)
 	identifyCmd.Nsid = 0
-	identifyCmd.Addr = *(*uint64)(unsafe.Pointer(&identifyBuf))
+	identifyCmd.Addr = uintptr(unsafe.Pointer(&identifyBuf[0]))
 	identifyCmd.DataLen = 4096
 	identifyCmd.Cdw10 = 1
 	identifyCmd.Cdw11 = 0
@@ -75,7 +76,7 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 }
 
 func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) error {
-	data := nvme.NvmeAdminCmd{}
+	data := NvmeAdminCmd{}
 	data.Opcode = cmd.Opcode
 	data.Flags = cmd.Flags
 	data.Rsvd1 = cmd.Rsvd1
@@ -107,7 +108,7 @@ func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) erro
 }
 
 func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *nvme.PassthruCmd) error {
-	data := nvme.PassthruCmd{}
+	data := PassthruCmd{}
 	data.Opcode = cmd.Opcode
 	data.Flags = cmd.Flags
 	data.Rsvd1 = cmd.Rsvd1
@@ -139,14 +140,14 @@ func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *nvme.PassthruCmd) error {
 }
 
 func (s *LinuxNvmeDriverHandle) DoNvmeIo(io *nvme.UserIo) error {
-	data := nvme.UserIo{}
+	data := UserIo{}
 	data.Opcode = io.Opcode
 	data.Flags = io.Flags
 	data.Control = io.Control
 	data.Nblocks = io.Nblocks
 	data.Rsvd = io.Rsvd
 	data.Metadata = io.Metadata
-	data.Addr = io.Addr
+	data.Addr = uint64(io.Addr)
 	data.Slba = io.Slba
 	data.Dsmgmt = io.Dsmgmt
 	data.Reftag = io.Reftag
@@ -186,48 +187,9 @@ func (s *LinuxNvmeDriverHandle) GetIdentity() []byte {
 }
 
 func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {
-	var rootError error
-
-	offset, xferLen := 0, dataSize
-	lsp, lpo, lsi := nvme.NVME_NO_LOG_LSP, offset, 0
-
-	dataBuffer := make([]byte, dataSize)
-
-	for {
-		if offset >= dataSize {
-			return dataBuffer, rootError
-		}
-
-		xferLen = dataSize - offset
-		if xferLen > 4096 {
-			xferLen = 4096
-		}
-
-		numd := uint32((dataSize >> 2) - 1)
-		numdh := uint32((numd >> 16) & 0xffff)
-		numdl := uint32(numd & 0xffff)
-		cdw10 := logId | (numdl << 16) | uint32(internal.Ternary(rae, (1<<15), 0)) | (uint32(lsp) << 8)
-
-		cmd := &nvme.NvmeAdminCmd{}
-		cmd.Opcode = uint8(nvme.NVME_ADMIN_OP_GET_LOG_PAGE)
-		cmd.Nsid = nsid
-		cmd.Addr = *(*uint64)(unsafe.Pointer(&dataBuffer))
-		cmd.DataLen = uint32(dataSize)
-		cmd.Cdw10 = cdw10
-		cmd.Cdw11 = numdh | uint32(lsi<<16)
-		cmd.Cdw12 = uint32(lpo)
-		cmd.Cdw13 = uint32(lpo >> 32)
-		cmd.Cdw14 = 0
-
-		rootError = s.DoNvmeAdminPassthru(cmd)
-		if rootError == nil {
-			return dataBuffer, nil
-		}
-
-		offset += xferLen
-	}
+	return common_nvme.NvmeGetLogPageByAdminPassthru(s, nsid, logId, rae, dataSize)
 }
 
 func (s *LinuxNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
-	return scsiSecurityCommand(s.fd, rw, dma, protocol, comId, buffer, timeoutSecs)
+	return errors.New("Not supported")
 }

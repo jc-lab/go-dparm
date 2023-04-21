@@ -17,3 +17,7 @@ func Test_IdentifyPowerState_Size(t *testing.T) {
 func Test_IdentifyController_Size(t *testing.T) {
 	assert.Equal(t, 4096, test.SizeOf(t, &IdentifyController{}))
 }
+
+func Test_SmartLogPage_Size(t *testing.T) {
+	assert.Equal(t, 512, test.SizeOf(t, &SmartLogPage{}))
+}

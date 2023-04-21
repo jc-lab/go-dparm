@@ -10,6 +10,7 @@ import (
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/internal/direct_mbr"
 	"log"
+	"strings"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
@@ -48,7 +49,7 @@ func ReadBasicInfo(fd int, path string) *LinuxBasicInfo {
 	switch pt := dev.Table.(type) {
 	case *gpt.Table:
 		result.PartitionStyle = common.PartitionStyleGpt
-		result.GptDiskId = pt.GUID
+		result.GptDiskId = strings.ToLower(pt.GUID)
 	case *mbr.Table:
 		result.PartitionStyle = common.PartitionStyleMbr
 		tableEx, err := direct_mbr.Read(dev.File, int(dev.LogicalBlocksize), int(dev.PhysicalBlocksize))

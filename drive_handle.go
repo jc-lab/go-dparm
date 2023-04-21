@@ -2,15 +2,14 @@ package go_dparm
 
 import (
 	"errors"
-	"strings"
-	"unsafe"
-
 	"github.com/jc-lab/go-dparm/ata"
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/internal"
 	"github.com/jc-lab/go-dparm/nvme"
 	"github.com/jc-lab/go-dparm/tcg"
 	"github.com/lunixbochs/struc"
+	"strings"
+	"unsafe"
 )
 
 const trimSet = " \t\r\n\x00"
@@ -151,7 +150,7 @@ func (p *DriveHandleImpl) SecurityCommand(rw bool, dma bool, protocol uint8, com
 	if ok {
 		cmd := &nvme.NvmeAdminCmd{}
 		cmd.Opcode = uint8(internal.Ternary(rw, nvme.NVME_ADMIN_OP_SECURITY_SEND, nvme.NVME_ADMIN_OP_SECURITY_RECV))
-		cmd.Addr = *(*uint64)(unsafe.Pointer(&buffer[0]))
+		cmd.Addr = uintptr(unsafe.Pointer(&buffer[0]))
 		cmd.DataLen = uint32(len(buffer))
 		cmd.Cdw10 = ((uint32(protocol) & 0xff) << 24) | ((uint32(comId) & 0xffff) << 8)
 		cmd.Cdw11 = uint32(len(buffer))
