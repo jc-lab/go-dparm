@@ -444,10 +444,10 @@ type SmartLogPage struct {
 	UnsafeShutdowns                            [16]uint8  `struc:"[16]uint8"`
 	MediaAndDataIntegrityErrors                [16]uint8  `struc:"[16]uint8"`
 	NumberOfErrorInformationLogEntries         [16]uint8  `struc:"[16]uint8"`
-	WarningCompositeemperatureime              [4]uint8   `struc:"[4]uint8"`
-	CriticalCompositeemperatureime             [4]uint8   `struc:"[4]uint8"`
+	WarningCompositeTemperatureTime              [4]uint8   `struc:"[4]uint8"`
+	CriticalCompositeTemperatureTime             [4]uint8   `struc:"[4]uint8"`
 	TemperatureSensor                          [8]uint16  `struc:"[8]uint16"`
-	ThermalManagementTemperatureransitionCount [2]uint32  `struc:"[2]uint32"`
-	TotalimeForThermalManagementemperature     [2]uint32  `struc:"[2]uint32"`
+	ThermalManagementTemperatureTransitionCount [2]uint32  `struc:"[2]uint32"`
+	TotalimeForThermalManagementTemperature     [2]uint32  `struc:"[2]uint32"`
 	RevRemaining                               [280]uint8 `struc:"[280]uint8"`
 }
