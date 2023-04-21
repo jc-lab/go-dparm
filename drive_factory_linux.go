@@ -63,6 +63,9 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 	impl.Info.GptDiskId = basicInfo.GptDiskId
 	impl.Info.MbrDiskSignature = basicInfo.MbrSignature
 
+	// Try to get incomplete data first in case of inquiry failure..
+	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision = getIdInfo(path) 
+
 	for _, driver := range f.drivers {
 		driverHandle, err := driver.OpenByFd(fd)
 		if err == nil {
@@ -72,8 +75,6 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 			impl.init()
 		}
 	}
-
-	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision = getIdInfo(path)
 
 	return impl, nil
 }
