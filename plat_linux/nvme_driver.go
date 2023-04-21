@@ -61,7 +61,7 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 	identifyCmd := nvme.NvmeAdminCmd{}
 	identifyCmd.Opcode = uint8(nvme.NVME_ADMIN_OP_IDENTIFY)
 	identifyCmd.Nsid = 0
-	identifyCmd.Addr = *(*uint64)(unsafe.Pointer(&identifyBuf[0]))
+	identifyCmd.Addr = *(*uint64)(unsafe.Pointer(&identifyBuf))
 	identifyCmd.DataLen = 4096
 	identifyCmd.Cdw10 = 1
 	identifyCmd.Cdw11 = 0
@@ -211,7 +211,7 @@ func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bo
 		cmd := &nvme.NvmeAdminCmd{}
 		cmd.Opcode = uint8(nvme.NVME_ADMIN_OP_GET_LOG_PAGE)
 		cmd.Nsid = nsid
-		cmd.Addr = *(*uint64)(unsafe.Pointer(&dataBuffer[0]))
+		cmd.Addr = *(*uint64)(unsafe.Pointer(&dataBuffer))
 		cmd.DataLen = uint32(dataSize)
 		cmd.Cdw10 = cdw10
 		cmd.Cdw11 = numdh | uint32(lsi<<16)
