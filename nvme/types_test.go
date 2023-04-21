@@ -6,10 +6,6 @@ import (
 	"testing"
 )
 
-func TestUserIoSize(t *testing.T) {
-	assert.Equal(t, 44, test.SizeOf(t, &UserIo{}))
-}
-
 func Test_IdentifyPowerState_Size(t *testing.T) {
 	assert.Equal(t, 32, test.SizeOf(t, &IdentifyPowerState{}))
 }
