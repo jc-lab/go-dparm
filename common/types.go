@@ -13,10 +13,35 @@ const (
 	PartitionStyleGpt
 )
 
+type MbrPartitionInfo struct {
+	PartitionType byte
+	BootIndicator bool
+}
+
+type GptPartitionInfo struct {
+	// PartitionType GUID Upper String Format {...}
+	PartitionType string
+	// PartitionId GUID Upper String Format {...}
+	PartitionId string
+}
+
+type Partition interface {
+	// GetStart bytes
+	GetStart() uint64
+	// GetEnd bytes
+	GetSize() uint64
+
+	GetPartitionStyle() PartitionStyle
+
+	GetMbrInfo() *MbrPartitionInfo
+	GetGptInfo() *GptPartitionInfo
+}
+
 type VolumeInfo struct {
 	Path        string
 	Filesystem  string
 	MountPoints []string
+	Partitions  []Partition
 }
 
 type DriveInfo struct {

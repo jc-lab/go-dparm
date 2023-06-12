@@ -1,4 +1,7 @@
-package go_dparm
+//go:build windows
+// +build windows
+
+package plat_win
 
 import (
 	"github.com/stretchr/testify/assert"

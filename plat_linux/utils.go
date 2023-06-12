@@ -5,6 +5,7 @@ package plat_linux
 
 import (
 	"github.com/diskfs/go-diskfs"
+	"github.com/diskfs/go-diskfs/partition"
 	"github.com/diskfs/go-diskfs/partition/gpt"
 	"github.com/diskfs/go-diskfs/partition/mbr"
 	"github.com/jc-lab/go-dparm/common"
@@ -18,6 +19,7 @@ import (
 
 type LinuxBasicInfo struct {
 	PartitionStyle common.PartitionStyle
+	PartitionTable partition.Table
 	DiskGeometry   unix.HDGeometry
 	MbrSignature   uint32
 	GptDiskId      string
@@ -45,6 +47,8 @@ func ReadBasicInfo(fd int, path string) *LinuxBasicInfo {
 	if err != unix.Errno(0) {
 		log.Fatalln(err)
 	}
+
+	result.PartitionTable = dev.Table
 
 	switch pt := dev.Table.(type) {
 	case *gpt.Table:

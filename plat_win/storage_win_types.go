@@ -15,6 +15,47 @@ type DRIVE_LAYOUT_INFORMATION_GPT struct {
 	MaxPartitionCount    uint32
 }
 
+type PARTITION_INFORMATION_MBR struct {
+	PartitionType       byte
+	BootIndicator       bool
+	RecognizedPartition bool
+	HiddenSectors       uint32
+	PartitionId         windows.GUID
+}
+
+type PARTITION_INFORMATION_GPT struct {
+	PartitionType windows.GUID
+	PartitionId   windows.GUID
+	Attributes    uint64
+	Name          [36]uint16
+}
+
+type PARTITION_INFORMATION_EX struct {
+	PartitionStyle   PartitionStyle
+	StartingOffset   int64
+	PartitionLength  int64
+	PartitionNumber  int32
+	RewritePartition bool
+	Rev01            bool
+	Rev02            bool
+	Rev03            bool
+	PartitionInfo    [112]byte
+}
+
+func (p *PARTITION_INFORMATION_EX) GetMbr() *PARTITION_INFORMATION_MBR {
+	if p.PartitionStyle == PartitionStyleGpt {
+		return (*PARTITION_INFORMATION_MBR)(unsafe.Pointer(&p.PartitionInfo[0]))
+	}
+	return nil
+}
+
+func (p *PARTITION_INFORMATION_EX) GetGpt() *PARTITION_INFORMATION_GPT {
+	if p.PartitionStyle == PartitionStyleGpt {
+		return (*PARTITION_INFORMATION_GPT)(unsafe.Pointer(&p.PartitionInfo[0]))
+	}
+	return nil
+}
+
 func GetSizeOf_DRIVE_LAYOUT_INFORMATION() int {
 	a := unsafe.Sizeof(DRIVE_LAYOUT_INFORMATION_GPT{})
 	b := unsafe.Sizeof(DRIVE_LAYOUT_INFORMATION_MBR{})
