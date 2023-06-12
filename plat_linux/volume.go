@@ -19,11 +19,13 @@ import (
 var partitionDeviceRegex = regexp.MustCompile("^(/dev/.+\\d)p(\\d+)$")
 
 type PartitionImpl struct {
-	start   uint64
-	size    uint64
-	style   common.PartitionStyle
-	mbrInfo *common.MbrPartitionInfo
-	gptInfo *common.GptPartitionInfo
+	devicePath string
+	parentPath string
+	start      uint64
+	size       uint64
+	style      common.PartitionStyle
+	mbrInfo    *common.MbrPartitionInfo
+	gptInfo    *common.GptPartitionInfo
 }
 
 type VolumeInfoImpl struct {
@@ -80,9 +82,8 @@ func (ctx *EnumVolumeContextImpl) OpenDriveByVolumePath(volumePath string) (comm
 }
 
 func (ctx *EnumVolumeContextImpl) OpenDriveByPartition(partition common.Partition) (common.DriveHandle, error) {
-	//partitionImpl := partition.(*PartitionImpl)
-	//return ctx.factory.OpenByPath(fmt.Sprintf("\\\\.\\PhysicalDrive%d", partitionImpl.DiskExtent.DiskNumber))
-	return nil, nil
+	partitionImpl := partition.(*PartitionImpl)
+	return ctx.factory.OpenByPath(partitionImpl.parentPath)
 }
 
 func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
@@ -139,9 +140,11 @@ func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
 					if partNum < len(table.Partitions) {
 						partition := table.Partitions[partNum]
 						volumeInfo.Partition = &PartitionImpl{
-							style: basicInfo.PartitionStyle,
-							start: uint64(partition.GetStart()),
-							size:  uint64(partition.GetStart()),
+							devicePath: devicePath,
+							parentPath: parentPath,
+							style:      basicInfo.PartitionStyle,
+							start:      uint64(partition.GetStart()),
+							size:       uint64(partition.GetStart()),
 							gptInfo: &common.GptPartitionInfo{
 								PartitionType: strings.ToUpper("{" + string(partition.Type) + "}"),
 								PartitionId:   strings.ToUpper("{" + partition.GUID + "}"),
@@ -153,9 +156,11 @@ func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
 					if partNum < len(table.Partitions) {
 						partition := table.Partitions[partNum]
 						volumeInfo.Partition = &PartitionImpl{
-							style: basicInfo.PartitionStyle,
-							start: uint64(partition.GetStart()),
-							size:  uint64(partition.GetStart()),
+							devicePath: devicePath,
+							parentPath: parentPath,
+							style:      basicInfo.PartitionStyle,
+							start:      uint64(partition.GetStart()),
+							size:       uint64(partition.GetStart()),
 							mbrInfo: &common.MbrPartitionInfo{
 								PartitionType: byte(partition.Type),
 								BootIndicator: partition.Bootable,
