@@ -1,5 +1,10 @@
 package plat_win
 
+import (
+	"golang.org/x/sys/windows"
+	"unsafe"
+)
+
 type PartitionStyle uint32
 
 const (
@@ -14,6 +19,7 @@ const (
 
 const (
 	IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS = 0x560000
+	IOCTL_DISK_GET_PARTITION_INFO_EX     = 0x00070048
 )
 
 type DEVICE_TYPE = uint32
@@ -57,6 +63,47 @@ type DISK_EXTENT struct {
 type VOLUME_DISK_EXTENTS struct {
 	NumberOfDiskExtents uint32
 	Extents             [1]DISK_EXTENT
+}
+
+type PARTITION_INFORMATION_MBR struct {
+	PartitionType       byte
+	BootIndicator       bool
+	RecognizedPartition bool
+	HiddenSectors       uint32
+	PartitionId         windows.GUID
+}
+
+type PARTITION_INFORMATION_GPT struct {
+	PartitionType windows.GUID
+	PartitionId   windows.GUID
+	Attributes    uint64
+	Name          [36]uint16
+}
+
+type PARTITION_INFORMATION_EX struct {
+	PartitionStyle   PartitionStyle
+	StartingOffset   int64
+	PartitionLength  int64
+	PartitionNumber  int32
+	RewritePartition bool
+	Rev01            bool
+	Rev02            bool
+	Rev03            bool
+	PartitionInfo    [112]byte
+}
+
+func (p *PARTITION_INFORMATION_EX) GetMbr() *PARTITION_INFORMATION_MBR {
+	if p.PartitionStyle == PartitionStyleGpt {
+		return (*PARTITION_INFORMATION_MBR)(unsafe.Pointer(&p.PartitionInfo[0]))
+	}
+	return nil
+}
+
+func (p *PARTITION_INFORMATION_EX) GetGpt() *PARTITION_INFORMATION_GPT {
+	if p.PartitionStyle == PartitionStyleGpt {
+		return (*PARTITION_INFORMATION_GPT)(unsafe.Pointer(&p.PartitionInfo[0]))
+	}
+	return nil
 }
 
 type STORAGE_BUS_TYPE byte

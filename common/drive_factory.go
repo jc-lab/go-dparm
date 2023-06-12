@@ -29,6 +29,7 @@ type EnumVolumeContext interface {
 	GetList() []VolumeInfo
 	FindVolumesByDrive(driveInfo *DriveInfo) []VolumeInfo
 	OpenDriveByVolumePath(volumePath string) (DriveHandle, error)
+	OpenDriveByPartition(partition Partition) (DriveHandle, error)
 }
 
 type DriveFactory interface {

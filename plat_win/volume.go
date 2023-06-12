@@ -11,11 +11,19 @@ import (
 	"unsafe"
 )
 
+type PartitionImpl struct {
+	DiskExtent    DISK_EXTENT
+	PartitionInfo PARTITION_INFORMATION_EX
+	mbrInfo       *common.MbrPartitionInfo
+	gptInfo       *common.GptPartitionInfo
+}
+
 type VolumeInfoImpl struct {
 	Path        string
 	Filesystem  string
 	MountPoints []string
 	DiskExtents []DISK_EXTENT
+	Partition   *PartitionImpl
 }
 
 type EnumVolumeContextImpl struct {
@@ -24,15 +32,19 @@ type EnumVolumeContextImpl struct {
 }
 
 func (item *VolumeInfoImpl) ToVolumeInfo() common.VolumeInfo {
-	return common.VolumeInfo{
+	out := common.VolumeInfo{
 		Path:        item.Path,
 		Filesystem:  item.Filesystem,
 		MountPoints: item.MountPoints,
 	}
+	if item.Partition != nil {
+		out.Partitions = append(out.Partitions, item.Partition)
+	}
+	return out
 }
 
 func (ctx *EnumVolumeContextImpl) GetList() []common.VolumeInfo {
-	results := []common.VolumeInfo{}
+	var results []common.VolumeInfo
 	for _, item := range ctx.volumes {
 		results = append(results, item.ToVolumeInfo())
 	}
@@ -64,6 +76,11 @@ func (ctx *EnumVolumeContextImpl) OpenDriveByVolumePath(volumePath string) (comm
 		}
 	}
 	return nil, nil
+}
+
+func (ctx *EnumVolumeContextImpl) OpenDriveByPartition(partition common.Partition) (common.DriveHandle, error) {
+	partitionImpl := partition.(*PartitionImpl)
+	return ctx.factory.OpenByPath(fmt.Sprintf("\\\\.\\PhysicalDrive%d", partitionImpl.DiskExtent.DiskNumber))
 }
 
 func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
@@ -135,6 +152,16 @@ func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
 					item.DiskExtents = append(item.DiskExtents, *diskExtent)
 					offset += unsafe.Sizeof(*diskExtent)
 				}
+
+				if volumeDiskExtentHeader.NumberOfDiskExtents > 0 {
+					partitionImpl := &PartitionImpl{
+						DiskExtent: item.DiskExtents[0],
+					}
+					err := partitionImpl.readPartitionInfoByVolumeHandle(handle)
+					if err == nil {
+						item.Partition = partitionImpl
+					}
+				}
 			}
 		}
 
@@ -150,3 +177,64 @@ func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
 	return impl, nil
 }
 
+func (p *PartitionImpl) readPartitionInfoByVolumeHandle(handle windows.Handle) error {
+	var bytesReturned uint32
+	err := windows.DeviceIoControl(
+		handle,
+		IOCTL_DISK_GET_PARTITION_INFO_EX,
+		nil,
+		0,
+		(*byte)(unsafe.Pointer(&p.PartitionInfo)),
+		uint32(unsafe.Sizeof(p.PartitionInfo)),
+		&bytesReturned,
+		nil,
+	)
+	if err == nil {
+		if p.PartitionInfo.PartitionStyle == PartitionStyleGpt {
+			winGptInfo := p.PartitionInfo.GetGpt()
+			p.gptInfo = &common.GptPartitionInfo{
+				PartitionType: strings.ToUpper(winGptInfo.PartitionType.String()),
+				PartitionId:   strings.ToUpper(winGptInfo.PartitionId.String()),
+			}
+		} else if p.PartitionInfo.PartitionStyle == PartitionStyleMbr {
+			winMbrInfo := p.PartitionInfo.GetMbr()
+			p.mbrInfo = &common.MbrPartitionInfo{
+				PartitionType: winMbrInfo.PartitionType,
+				BootIndicator: winMbrInfo.BootIndicator,
+			}
+		}
+	}
+	return err
+}
+
+func (p *PartitionImpl) GetStart() uint64 {
+	return p.DiskExtent.StartingOffset
+}
+
+func (p *PartitionImpl) GetSize() uint64 {
+	return p.DiskExtent.ExtentLength
+}
+
+func (p *PartitionImpl) GetPartitionStyle() common.PartitionStyle {
+	switch p.PartitionInfo.PartitionStyle {
+	case PartitionStyleGpt:
+		return common.PartitionStyleGpt
+	case PartitionStyleMbr:
+		return common.PartitionStyleMbr
+	}
+	return common.PartitionStyleRaw
+}
+
+func (p *PartitionImpl) GetMbrInfo() *common.MbrPartitionInfo {
+	if p.PartitionInfo.PartitionStyle == PartitionStyleMbr {
+		return p.mbrInfo
+	}
+	return nil
+}
+
+func (p *PartitionImpl) GetGptInfo() *common.GptPartitionInfo {
+	if p.PartitionInfo.PartitionStyle == PartitionStyleGpt {
+		return p.gptInfo
+	}
+	return nil
+}
