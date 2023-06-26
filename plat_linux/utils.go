@@ -30,12 +30,12 @@ func OpenDevice(path string) (int, error) {
 		uint32(unix.S_IRUSR|unix.S_IWUSR|unix.S_IRGRP|unix.S_IWGRP|unix.S_IROTH|unix.S_IWOTH))
 }
 
-func ReadBasicInfo(fd int, path string) *LinuxBasicInfo {
+func ReadBasicInfo(fd int, path string) (*LinuxBasicInfo, error) {
 	result := &LinuxBasicInfo{}
 
 	dev, err := diskfs.Open(path, diskfs.WithOpenMode(diskfs.ReadOnly))
 	if err != nil {
-		log.Fatalln(err)
+		return nil, common.NewNestedError(path+" diskfs.open failed", err)
 	}
 
 	_, _, err = unix.Syscall(
@@ -45,7 +45,7 @@ func ReadBasicInfo(fd int, path string) *LinuxBasicInfo {
 		uintptr(unsafe.Pointer(&result.DiskGeometry)),
 	)
 	if err != unix.Errno(0) {
-		log.Fatalln(err)
+		return nil, common.NewNestedError(path+" HDIO_GETGEO failed", err)
 	}
 
 	result.PartitionTable = dev.Table
@@ -64,7 +64,7 @@ func ReadBasicInfo(fd int, path string) *LinuxBasicInfo {
 		log.Printf("%s: %T\n", "Unknown partition type", pt)
 	}
 
-	return result
+	return result, nil
 }
 
 func readNullTerminatedAscii(buf []byte, offset int) string {

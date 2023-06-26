@@ -131,7 +131,7 @@ func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
 			if !exists {
 				fd, err := OpenDevice(parentPath)
 				if err == nil {
-					basicInfo = ReadBasicInfo(fd, parentPath)
+					basicInfo, err = ReadBasicInfo(fd, parentPath)
 				}
 			}
 			if basicInfo != nil && basicInfo.PartitionTable != nil {

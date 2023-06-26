@@ -52,18 +52,23 @@ func (f *LinuxDriveFactory) OpenByPath(path string) (common.DriveHandle, error) 
 }
 
 func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, error) {
+	var err error
+
 	impl := &common.DriveHandleImpl{}
 	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DevicePath = path
 
-	basicInfo := ReadBasicInfo(fd, path)
+	basicInfo, err := ReadBasicInfo(fd, path)
 
-	impl.Info.PartitionStyle = basicInfo.PartitionStyle
-	impl.Info.GptDiskId = basicInfo.GptDiskId
-	impl.Info.MbrDiskSignature = basicInfo.MbrSignature
-
+	if err == nil {
+		impl.Info.PartitionStyle = basicInfo.PartitionStyle
+		impl.Info.GptDiskId = basicInfo.GptDiskId
+		impl.Info.MbrDiskSignature = basicInfo.MbrSignature
+	}
+	
 	// Try to get incomplete data first in case of inquiry failure..
-	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision = getIdInfo(path)
+	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision, err = getIdInfo(path)
+	_ = err
 
 	for _, driver := range f.drivers {
 		driverHandle, err := driver.OpenByFd(fd)
@@ -85,7 +90,7 @@ func (f *LinuxDriveFactory) EnumDrives() ([]common.DriveInfo, error) {
 
 	dir, err := os.ReadDir("/sys/block")
 	if err != nil {
-		log.Fatalln(err)
+		return nil, common.NewNestedError("open /sys/block failed", err)
 	}
 
 	for _, ent := range dir {
@@ -117,14 +122,14 @@ func (f *LinuxDriveFactory) EnumVolumes() (common.EnumVolumeContext, error) {
 	return EnumVolumes(f)
 }
 
-func getIdInfo(path string) (string, string, string, string) {
+func getIdInfo(path string) (string, string, string, string, error) {
 	// Get model, serial from /dev/disk/by-id, has dependency to udev..?
 	idPath := "/dev/disk/by-id"
 	var model, serial, vendor, rev string
 
 	dir, err := os.ReadDir(idPath)
 	if err != nil {
-		log.Fatalln(err)
+		return "", "", "", "", common.NewNestedError("readdir /dev/disk/by-id failed", err)
 	}
 
 	devMap := make(map[string]string)
@@ -137,7 +142,7 @@ func getIdInfo(path string) (string, string, string, string) {
 
 		actualPath, err := filepath.EvalSymlinks(idPath + "/" + name)
 		if err != nil {
-			log.Fatalln(err)
+			return "", "", "", "", common.NewNestedError("EvalSymlinks "+idPath+"/"+name+" failed", err)
 		}
 		devMap[name] = actualPath
 	}
@@ -169,5 +174,5 @@ func getIdInfo(path string) (string, string, string, string) {
 		rev = strings.TrimSpace(s)
 	}
 
-	return model, serial, vendor, rev
+	return model, serial, vendor, rev, nil
 }
