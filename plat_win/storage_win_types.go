@@ -43,7 +43,7 @@ type PARTITION_INFORMATION_EX struct {
 }
 
 func (p *PARTITION_INFORMATION_EX) GetMbr() *PARTITION_INFORMATION_MBR {
-	if p.PartitionStyle == PartitionStyleGpt {
+	if p.PartitionStyle == PartitionStyleMbr {
 		return (*PARTITION_INFORMATION_MBR)(unsafe.Pointer(&p.PartitionInfo[0]))
 	}
 	return nil
