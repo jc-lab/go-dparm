@@ -270,7 +270,6 @@ type PassthruCmd struct {
 	TimeoutMs   uint32
 	Result      uint32
 
-	// Used in Linux
 	DataAddr   uintptr // First
 	DataBuffer []byte  // Second
 }
