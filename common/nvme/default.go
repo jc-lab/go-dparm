@@ -4,7 +4,6 @@ import (
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/internal"
 	"github.com/jc-lab/go-dparm/nvme"
-	"unsafe"
 )
 
 func NvmeGetLogPageByAdminPassthru(handle common.NvmeDriverHandle, nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {
@@ -33,7 +32,7 @@ func NvmeGetLogPageByAdminPassthru(handle common.NvmeDriverHandle, nsid uint32, 
 		cmd := &nvme.NvmeAdminCmd{}
 		cmd.Opcode = uint8(nvme.NVME_ADMIN_OP_GET_LOG_PAGE)
 		cmd.Nsid = nsid
-		cmd.Addr = uintptr(unsafe.Pointer(&dataBuffer[0]))
+		cmd.DataBuffer = dataBuffer
 		cmd.DataLen = uint32(dataSize)
 		cmd.Cdw10 = cdw10
 		cmd.Cdw11 = numdh | uint32(lsi<<16)

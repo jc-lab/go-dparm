@@ -62,7 +62,7 @@ func (s *LinuxNvmeDriverHandle) ReadIdentify(fd int) ([]byte, error) {
 	identifyCmd := nvme.NvmeAdminCmd{}
 	identifyCmd.Opcode = uint8(nvme.NVME_ADMIN_OP_IDENTIFY)
 	identifyCmd.Nsid = 0
-	identifyCmd.Addr = uintptr(unsafe.Pointer(&identifyBuf[0]))
+	identifyCmd.DataBuffer = identifyBuf
 	identifyCmd.DataLen = 4096
 	identifyCmd.Cdw10 = 1
 	identifyCmd.Cdw11 = 0
@@ -84,7 +84,10 @@ func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) erro
 	data.Cdw2 = cmd.Cdw2
 	data.Cdw3 = cmd.Cdw3
 	data.Metadata = cmd.Metadata
-	data.Addr = uint64(cmd.Addr)
+	data.Addr = cmd.GetDataAddr()
+	if data.Addr == 0 {
+		return errors.New("addr is null")
+	}
 	data.MetadataLen = cmd.MetadataLen
 	data.DataLen = cmd.DataLen
 	data.Cdw10 = cmd.Cdw10
@@ -116,7 +119,10 @@ func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *nvme.PassthruCmd) error {
 	data.Cdw2 = cmd.Cdw2
 	data.Cdw3 = cmd.Cdw3
 	data.Metadata = cmd.Metadata
-	data.Addr = uint64(cmd.Addr)
+	data.Addr = cmd.GetDataAddr()
+	if data.Addr == 0 {
+		return errors.New("addr is null")
+	}
 	data.MetadataLen = cmd.MetadataLen
 	data.Cdw10 = cmd.Cdw10
 	data.Cdw11 = cmd.Cdw11
