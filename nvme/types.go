@@ -1,5 +1,7 @@
 package nvme
 
+import "unsafe"
+
 type StatusCode uint16
 type AdminOpCode uint8
 type GetLogPageCommand uint8
@@ -257,7 +259,6 @@ type PassthruCmd struct {
 	Cdw2        uint32
 	Cdw3        uint32
 	Metadata    uint64
-	Addr        uintptr
 	MetadataLen uint32
 	DataLen     uint32
 	Cdw10       uint32
@@ -268,6 +269,9 @@ type PassthruCmd struct {
 	Cdw15       uint32
 	TimeoutMs   uint32
 	Result      uint32
+
+	DataAddr   uintptr // First
+	DataBuffer []byte  // Second
 }
 
 type NvmeAdminCmd PassthruCmd
@@ -450,4 +454,20 @@ type SmartLogPage struct {
 	ThermalManagementTemperatureTransitionCount [2]uint32  `struc:"[2]uint32"`
 	TotalimeForThermalManagementTemperature     [2]uint32  `struc:"[2]uint32"`
 	RevRemaining                                [280]uint8 `struc:"[280]uint8"`
+}
+
+func (cmd *PassthruCmd) GetDataAddr() uint64 {
+	if cmd.DataAddr != 0 {
+		return uint64(cmd.DataAddr)
+	} else {
+		return uint64(uintptr(unsafe.Pointer(&cmd.DataBuffer[0])))
+	}
+}
+
+func (cmd *NvmeAdminCmd) GetDataAddr() uint64 {
+	if cmd.DataAddr != 0 {
+		return uint64(cmd.DataAddr)
+	} else {
+		return uint64(uintptr(unsafe.Pointer(&cmd.DataBuffer[0])))
+	}
 }

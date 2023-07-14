@@ -6,6 +6,7 @@ package plat_win
 import (
 	"errors"
 	"fmt"
+	"github.com/jc-lab/go-dparm/nvme"
 	"unsafe"
 
 	"github.com/jc-lab/go-dparm/common"
@@ -96,6 +97,10 @@ func (s *WindowsNvmeDriverHandle) Close() {
 
 func (s *WindowsNvmeDriverHandle) GetIdentity() []byte {
 	return s.identity[:]
+}
+
+func (s *WindowsNvmeDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) error {
+	return errors.New("not supported")
 }
 
 func (s *WindowsNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {

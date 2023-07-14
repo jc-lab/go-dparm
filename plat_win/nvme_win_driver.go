@@ -6,6 +6,7 @@ package plat_win
 import (
 	"errors"
 	"fmt"
+	"github.com/jc-lab/go-dparm/nvme"
 	"unsafe"
 
 	"github.com/jc-lab/go-dparm/common"
@@ -143,6 +144,10 @@ func (s *NvmeWinDriverHandle) Close() {
 
 func (s *NvmeWinDriverHandle) GetIdentity() []byte {
 	return s.identity
+}
+
+func (s *NvmeWinDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) error {
+	return scsiMiniportDoNvmeAdminPassthru(s.scsiHandle, cmd)
 }
 
 func (s *NvmeWinDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {
