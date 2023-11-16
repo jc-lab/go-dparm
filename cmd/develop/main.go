@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/jc-lab/go-dparm"
 	"log"
 )
@@ -22,7 +23,8 @@ func main() {
 		log.Println(err)
 	} else {
 		for i, drive := range drives {
-			log.Printf("DRIVE[%d]: %s", i, drive.Model)
+			raw, _ := json.Marshal(drive)
+			log.Printf("DRIVE[%d]: %s: %s", i, drive.Model, string(raw))
 		}
 	}
 
@@ -31,7 +33,8 @@ func main() {
 		log.Println(err)
 	} else {
 		for i, drive := range volumes.GetList() {
-			log.Printf("VOLUME[%d]: %s", i, drive)
+			raw, _ := json.Marshal(drive)
+			log.Printf("VOLUME[%d]: %s", i, string(raw))
 		}
 	}
 }

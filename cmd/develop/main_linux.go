@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"unsafe"
 
@@ -35,7 +36,8 @@ func main() {
 		log.Println(err)
 	} else {
 		for i, volume := range volumes.GetList() {
-			log.Printf("VOLUME[%d]: %s", i, volume)
+			raw, _ := json.Marshal(volume)
+			log.Printf("VOLUME[%d]: %s", i, string(raw))
 		}
 	}
 
