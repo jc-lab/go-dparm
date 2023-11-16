@@ -61,6 +61,7 @@ func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (
 	impl.Info.PartitionStyle = basicInfo.PartitionStyle
 	impl.Info.GptDiskId = basicInfo.GptDiskId
 	impl.Info.MbrDiskSignature = basicInfo.MbrSignature
+	impl.Info.Partitions = basicInfo.Partitions
 
 	if basicInfo.StorageDeviceNumber != nil {
 		impl.Info.WindowsDevNum = int(basicInfo.StorageDeviceNumber.DeviceNumber)

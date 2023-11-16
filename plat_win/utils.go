@@ -24,6 +24,7 @@ type WinBasicInfo struct {
 	PartitionStyle      common.PartitionStyle
 	MbrSignature        uint32
 	GptDiskId           string
+	Partitions          []common.Partition
 }
 
 func OpenDevice(path string) (windows.Handle, error) {
@@ -48,6 +49,7 @@ func ReadBasicInfo(handle windows.Handle) *WinBasicInfo {
 	diskGeometryEx := DISK_GEOMETRY_EX{}
 
 	var bytesReturned uint32
+	var diskNumber int = -1
 
 	err := windows.DeviceIoControl(
 		handle,
@@ -60,6 +62,7 @@ func ReadBasicInfo(handle windows.Handle) *WinBasicInfo {
 		nil,
 	)
 	if err == nil {
+		diskNumber = int(storageDeviceNumber.DeviceNumber)
 		result.StorageDeviceNumber = &storageDeviceNumber
 	}
 
@@ -81,16 +84,67 @@ func ReadBasicInfo(handle windows.Handle) *WinBasicInfo {
 	if err == nil {
 		header := (*DRIVE_LAYOUT_INFORMATION_EX_HEADER)(unsafe.Pointer(&data[0]))
 		next := data[int(unsafe.Sizeof(*header)):]
+		entryOffset := GetSizeOf_DRIVE_LAYOUT_INFORMATION()
+		entryData := next[entryOffset:]
+		entrySize := unsafe.Sizeof(PARTITION_INFORMATION_EX{})
+
 		if header.PartitionStyle == PartitionStyleGpt {
 			info := (*DRIVE_LAYOUT_INFORMATION_GPT)(unsafe.Pointer(&next[0]))
 			result.PartitionStyle = common.PartitionStyleGpt
 			result.GptDiskId = info.DiskId.String()
 			result.GptDiskId = strings.Trim(result.GptDiskId, "{}")
 			result.GptDiskId = strings.ToLower(result.GptDiskId)
+
+			for i := 0; i < int(header.PartitionCount); i++ {
+				if len(entryData) < int(entrySize) {
+					break
+				}
+				partitionEntry := (*PARTITION_INFORMATION_EX)(unsafe.Pointer(&entryData[0]))
+				entryData = entryData[entrySize:]
+
+				winGptInfo := partitionEntry.GetGpt()
+				partitionImpl := &PartitionImpl{
+					DiskExtent: DISK_EXTENT{
+						DiskNumber:     uint32(diskNumber),
+						StartingOffset: uint64(partitionEntry.StartingOffset),
+						ExtentLength:   uint64(partitionEntry.PartitionLength),
+					},
+					PartitionInfo: *partitionEntry,
+					gptInfo: &common.GptPartitionInfo{
+						PartitionType: strings.ToUpper(winGptInfo.PartitionType.String()),
+						PartitionId:   strings.ToUpper(winGptInfo.PartitionId.String()),
+					},
+				}
+				result.Partitions = append(result.Partitions, partitionImpl)
+			}
+
 		} else if header.PartitionStyle == PartitionStyleMbr {
 			info := (*DRIVE_LAYOUT_INFORMATION_MBR)(unsafe.Pointer(&next[0]))
 			result.PartitionStyle = common.PartitionStyleMbr
 			result.MbrSignature = info.Signature
+
+			for i := 0; i < int(header.PartitionCount); i++ {
+				if len(entryData) < int(entrySize) {
+					break
+				}
+				partitionEntry := (*PARTITION_INFORMATION_EX)(unsafe.Pointer(&entryData[0]))
+				entryData = entryData[entrySize:]
+
+				winMbrInfo := partitionEntry.GetMbr()
+				partitionImpl := &PartitionImpl{
+					DiskExtent: DISK_EXTENT{
+						DiskNumber:     uint32(diskNumber),
+						StartingOffset: uint64(partitionEntry.StartingOffset),
+						ExtentLength:   uint64(partitionEntry.PartitionLength),
+					},
+					PartitionInfo: *partitionEntry,
+					mbrInfo: &common.MbrPartitionInfo{
+						PartitionType: winMbrInfo.PartitionType,
+						BootIndicator: winMbrInfo.BootIndicator,
+					},
+				}
+				result.Partitions = append(result.Partitions, partitionImpl)
+			}
 		}
 	}
 

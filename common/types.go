@@ -98,6 +98,7 @@ type DriveInfo struct {
 
 	TcgRawFeatures map[uint16][]byte
 
-	Removable int
-	DriveType DriveType
+	Removable  int
+	DriveType  DriveType
+	Partitions []Partition
 }
