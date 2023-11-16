@@ -54,6 +54,7 @@ func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (
 	impl := &common.DriveHandleImpl{}
 	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DevicePath = path
+	impl.Info.Removable = -1
 
 	basicInfo := ReadBasicInfo(handle)
 
@@ -91,6 +92,21 @@ func (f *WindowsDriveFactory) OpenByHandle(handle windows.Handle, path string) (
 
 		impl.Info.VendorId = storageQueryResp.VendorId
 		impl.Info.ProductRevision = storageQueryResp.ProductRevision
+		if storageQueryResp.RemovableMedia {
+			impl.Info.Removable = 1
+		} else {
+			impl.Info.Removable = 0
+		}
+		switch storageQueryResp.DeviceType {
+		case 0x00:
+			impl.Info.DriveType = common.DriveTypeFixed
+		case 0x01:
+			impl.Info.DriveType = common.DriveTypeTape
+		case 0x05:
+			impl.Info.DriveType = common.DriveTypeCdrom
+		case 0x09:
+			impl.Info.DriveType = common.DriveTypeRemote
+		}
 	}
 
 	return impl, nil

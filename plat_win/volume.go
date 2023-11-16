@@ -24,6 +24,7 @@ type VolumeInfoImpl struct {
 	MountPoints []string
 	DiskExtents []DISK_EXTENT
 	Partition   *PartitionImpl
+	DriveType   common.DriveType
 }
 
 type EnumVolumeContextImpl struct {
@@ -36,6 +37,7 @@ func (item *VolumeInfoImpl) ToVolumeInfo() common.VolumeInfo {
 		Path:        item.Path,
 		Filesystem:  item.Filesystem,
 		MountPoints: item.MountPoints,
+		DriveType:   item.DriveType,
 	}
 	if item.Partition != nil {
 		out.Partitions = append(out.Partitions, item.Partition)
@@ -126,6 +128,9 @@ func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
 			textLen := wcslen(fsNameBuf[:])
 			item.Filesystem = windows.UTF16ToString(fsNameBuf[:textLen])
 		}
+
+		driveType := windows.GetDriveType(&volumeNameBuf[0])
+		item.DriveType = common.DriveType(driveType)
 
 		textLen := wcslen(volumeNameBuf[:])
 		for ; (textLen > 0) && (volumeNameBuf[textLen-1] == '\\'); textLen-- {

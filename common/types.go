@@ -37,11 +37,25 @@ type Partition interface {
 	GetGptInfo() *GptPartitionInfo
 }
 
+type DriveType int
+
+const (
+	DriveTypeUnknown DriveType = 0 + iota
+	DriveTypeNoRootDir
+	DriveTypeRemovable
+	DriveTypeFixed
+	DriveTypeRemote
+	DriveTypeCdrom
+	DriveTypeRamdisk
+	DriveTypeTape
+)
+
 type VolumeInfo struct {
 	Path        string
 	Filesystem  string
 	MountPoints []string
 	Partitions  []Partition
+	DriveType   DriveType
 }
 
 type DriveInfo struct {
@@ -83,4 +97,7 @@ type DriveInfo struct {
 	TcgDataStore         bool
 
 	TcgRawFeatures map[uint16][]byte
+
+	Removable int
+	DriveType DriveType
 }

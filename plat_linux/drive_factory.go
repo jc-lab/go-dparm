@@ -57,6 +57,7 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 	impl := &common.DriveHandleImpl{}
 	impl.Info.DrivingType = common.DrivingUnknown
 	impl.Info.DevicePath = path
+	impl.Info.Removable = -1
 
 	basicInfo, err := ReadBasicInfo(fd, path)
 
@@ -65,7 +66,7 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 		impl.Info.GptDiskId = basicInfo.GptDiskId
 		impl.Info.MbrDiskSignature = basicInfo.MbrSignature
 	}
-	
+
 	// Try to get incomplete data first in case of inquiry failure..
 	impl.Info.Model, impl.Info.Serial, impl.Info.VendorId, impl.Info.FirmwareRevision, err = getIdInfo(path)
 	_ = err
