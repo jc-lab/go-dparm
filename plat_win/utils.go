@@ -77,7 +77,7 @@ func ReadBasicInfo(handle windows.Handle) *WinBasicInfo {
 		result.DiskGeometryEx = &diskGeometryEx
 	}
 
-	data, err := readDeviceIoControl(handle, IOCTL_DISK_GET_DRIVE_LAYOUT_EX, nil, 0)
+	data, err := ReadDeviceIoControl(handle, IOCTL_DISK_GET_DRIVE_LAYOUT_EX, nil, 0)
 	if err == nil {
 		header := (*DRIVE_LAYOUT_INFORMATION_EX_HEADER)(unsafe.Pointer(&data[0]))
 		next := data[int(unsafe.Sizeof(*header)):]
@@ -113,7 +113,7 @@ func ReadStorageQuery(handle windows.Handle) (*StorageDeviceDescription, error) 
 	query.QueryType = PropertyStandardQuery
 	query.PropertyId = StorageDeviceProperty
 
-	buffer, err := readDeviceIoControl(
+	buffer, err := ReadDeviceIoControl(
 		handle,
 		IOCTL_STORAGE_QUERY_PROPERTY,
 		(*byte)(unsafe.Pointer(&query)),
@@ -155,7 +155,7 @@ func readNullTerminatedAscii(buf []byte, offset int) string {
 	return ""
 }
 
-func readDeviceIoControl(handle windows.Handle, ioctl uint32, inBuffer *byte, inSize uint32) ([]byte, error) {
+func ReadDeviceIoControl(handle windows.Handle, ioctl uint32, inBuffer *byte, inSize uint32) ([]byte, error) {
 	var bytesReturned uint32
 
 	buffer := make([]byte, 4096)
@@ -171,7 +171,6 @@ func readDeviceIoControl(handle windows.Handle, ioctl uint32, inBuffer *byte, in
 
 	return nil, errno
 }
-
 
 func copyToPointer(dest unsafe.Pointer, src []byte, len int) {
 	destRef := unsafe.Slice((*byte)(dest), len)
