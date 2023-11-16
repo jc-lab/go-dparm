@@ -503,7 +503,7 @@ type SmartAttributeValues struct {
  */
 type SmartAttributeThresholds struct {
 	RevNumber         uint16 `struc:"uint16"`
-	Attributes        [SMART_ATTRIBUTES_NUMBER]SmartAttribute
+	Attributes        [SMART_ATTRIBUTES_NUMBER]SmartAttributeThreshold
 	Reserved01        [18]uint8  `struc:"[18]uint8"`
 	VendorSpecific380 [131]uint8 `struc:"[131]uint8"`
 	Checksum          uint8      `struc:"uint8"`
