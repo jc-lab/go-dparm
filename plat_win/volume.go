@@ -93,6 +93,11 @@ func EnumVolumes(factory common.DriveFactory) (*EnumVolumeContextImpl, error) {
 	fsNameBuf := [128]uint16{}
 	dataBuffer := [4096]byte{}
 
+	prevErrorMode := windows.SetErrorMode(windows.SEM_FAILCRITICALERRORS)
+	defer func() {
+		windows.SetErrorMode(prevErrorMode)
+	}()
+
 	fvHandle, err := windows.FindFirstVolume(&volumeNameBuf[0], uint32(len(volumeNameBuf)))
 	if err != nil {
 		return nil, err
