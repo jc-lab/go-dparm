@@ -437,7 +437,7 @@ const (
 
 // 12
 type SmartAttribute struct {
-	id uint8 `struc:"uint8"`
+	Id uint8 `struc:"uint8"`
 	/**
 	 * Status flag
 	 * Bit 0 (pre-failure/advisory bit)
@@ -445,17 +445,17 @@ type SmartAttribute struct {
 	 * Bits 2-5 (vendor specific)
 	 * Bits 6-15 (Reserved)
 	 */
-	flags      uint16   `struc:"uint16"`
-	current    uint8    `struc:"uint8"`
-	worst      uint8    `struc:"uint8"`
-	raw        [6]uint8 `struc:"[6]uint8"`
-	reserved01 uint8    `struc:"uint8"`
+	Flags      uint16   `struc:"uint16"`
+	Current    uint8    `struc:"uint8"`
+	Worst      uint8    `struc:"uint8"`
+	Raw        [6]uint8 `struc:"[6]uint8"`
+	Reserved01 uint8    `struc:"uint8"`
 }
 
 type SmartAttributeThreshold struct {
-	id         uint8     `struc:"uint8"`
-	threshold  uint8     `struc:"uint8"`
-	reserved01 [10]uint8 `struc:"[10]uint8"`
+	Id         uint8     `struc:"uint8"`
+	Threshold  uint8     `struc:"uint8"`
+	Reserved01 [10]uint8 `struc:"[10]uint8"`
 }
 
 /**
@@ -465,34 +465,34 @@ type SmartAttributeThreshold struct {
  * SFF-8035R2
  */
 type SmartAttributeValues struct {
-	revNumber                                        uint16 `struc:"uint16"`
-	attributes                                       [SMART_ATTRIBUTES_NUMBER]SmartAttribute
-	offlineDataCollectionStatus                      uint8  `struc:"uint8"`
-	selfTestExecStatus                               uint8  `struc:"uint8"`
-	totalTimeToCompleteOfflineDataCollectionActivity uint16 `struc:"uint16"`
-	vendorSpecific366                                uint8  `struc:"uint8"`
-	offlineDataCollectionCapability                  uint8  `struc:"uint8"`
-	smartCapability                                  uint16 `struc:"uint16"`
+	RevNumber                                        uint16 `struc:"uint16"`
+	Attributes                                       [SMART_ATTRIBUTES_NUMBER]SmartAttribute
+	OfflineDataCollectionStatus                      uint8  `struc:"uint8"`
+	SelfTestExecStatus                               uint8  `struc:"uint8"`
+	TotalTimeToCompleteOfflineDataCollectionActivity uint16 `struc:"uint16"`
+	VendorSpecific366                                uint8  `struc:"uint8"`
+	OfflineDataCollectionCapability                  uint8  `struc:"uint8"`
+	SmartCapability                                  uint16 `struc:"uint16"`
 	/**
 	 * 7-1: Reserved
 	 *   0: device error logging supported
 	 */
-	errorlogCapability uint8 `struc:"uint8"`
-	vendorSpecific371  uint8 `struc:"uint8"`
+	ErrorlogCapability uint8 `struc:"uint8"`
+	VendorSpecific371  uint8 `struc:"uint8"`
 	/**
 	 * Unit: minutes
 	 */
-	shortSelftestRoutineRecommandedPollingTime uint8 `struc:"uint8"`
+	ShortSelftestRoutineRecommandedPollingTime uint8 `struc:"uint8"`
 	/**
 	 * Extended self-test routine recommended polling time (7:0) in minutes.
 	 * If FFh use bytes 375 and 376 for the polling time.
 	 */
-	extendedSelftestRoutineRecommandedPollingTimeA  uint8      `struc:"uint8"`
-	conveyanceSelftestRoutineRecommandedPollingTime uint8      `struc:"uint8"`
-	extendedSelftestRoutineRecommandedPollingTimeB  [2]uint8   `struc:"[2]uint8"`
-	reserved01                                      [9]uint8   `struc:"[9]uint8"`
-	vendorSpecific386                               [125]uint8 `struc:"[125]uint8"`
-	checksum                                        uint8      `struc:"uint8"`
+	ExtendedSelftestRoutineRecommandedPollingTimeA  uint8      `struc:"uint8"`
+	ConveyanceSelftestRoutineRecommandedPollingTime uint8      `struc:"uint8"`
+	ExtendedSelftestRoutineRecommandedPollingTimeB  [2]uint8   `struc:"[2]uint8"`
+	Reserved01                                      [9]uint8   `struc:"[9]uint8"`
+	VendorSpecific386                               [125]uint8 `struc:"[125]uint8"`
+	Checksum                                        uint8      `struc:"uint8"`
 }
 
 /**
@@ -502,11 +502,11 @@ type SmartAttributeValues struct {
  * SFF-8035R2 Table 3
  */
 type SmartAttributeThresholds struct {
-	revNumber         uint16 `struc:"uint16"`
-	attributes        [SMART_ATTRIBUTES_NUMBER]SmartAttribute
-	reserved01        [18]uint8  `struc:"[18]uint8"`
-	vendorSpecific380 [131]uint8 `struc:"[131]uint8"`
-	checksum          uint8      `struc:"uint8"`
+	RevNumber         uint16 `struc:"uint16"`
+	Attributes        [SMART_ATTRIBUTES_NUMBER]SmartAttribute
+	Reserved01        [18]uint8  `struc:"[18]uint8"`
+	VendorSpecific380 [131]uint8 `struc:"[131]uint8"`
+	Checksum          uint8      `struc:"uint8"`
 }
 
 /*

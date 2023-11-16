@@ -1,13 +1,14 @@
-package ata
+package ata_util
 
 import (
+	"github.com/jc-lab/go-dparm/ata"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestIsDma(t *testing.T) {
 	type args struct {
-		op OpCode
+		op ata.OpCode
 	}
 	tests := []struct {
 		name string
@@ -25,7 +26,7 @@ func TestIsDma(t *testing.T) {
 
 func TestIsNeedsLba48(t *testing.T) {
 	type args struct {
-		op    OpCode
+		op    ata.OpCode
 		lba   uint64
 		nsect uint
 	}
@@ -45,8 +46,8 @@ func TestIsNeedsLba48(t *testing.T) {
 
 func TestTfInit(t *testing.T) {
 	type args struct {
-		tf    Tf
-		op    OpCode
+		tf    ata.Tf
+		op    ata.OpCode
 		lba   uint64
 		nsect uint
 	}
