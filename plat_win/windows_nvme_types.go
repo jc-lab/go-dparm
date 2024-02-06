@@ -136,3 +136,9 @@ type StorageQueryWithoutBuffer struct {
 	Query            STORAGE_PROPERTY_QUERY
 	ProtocolSpecific STORAGE_PROTOCOL_SPECIFIC_DATA
 }
+
+type STORAGE_PROTOCOL_DATA_DESCRIPTOR struct {
+	Version          uint32
+	Size             uint32
+	ProtocolSpecific STORAGE_PROTOCOL_SPECIFIC_DATA
+}

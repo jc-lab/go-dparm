@@ -105,16 +105,22 @@ func (s *WindowsNvmeDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) er
 
 func (s *WindowsNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, dataSize int) ([]byte, error) {
 	headerSize := int(unsafe.Sizeof(StorageQueryWithoutBuffer{}))
-	nptwb := StorageQueryWithoutBuffer{}
 	buffer := make([]byte, headerSize+dataSize)
+	nptwb := (*StorageQueryWithoutBuffer)(unsafe.Pointer(&buffer[0]))
 
-	nptwb.Query.PropertyId = StorageAdapterProtocolSpecificProperty
+	nptwb.Query.PropertyId = StorageDeviceProtocolSpecificProperty
 	nptwb.Query.QueryType = PropertyStandardQuery
 	nptwb.ProtocolSpecific.ProtocolType = ProtocolTypeNvme
 	nptwb.ProtocolSpecific.DataType = NVMeDataTypeLogPage
 	nptwb.ProtocolSpecific.ProtocolDataRequestValue = logId
-	nptwb.ProtocolSpecific.ProtocolDataRequestSubValue = 0
-	nptwb.ProtocolSpecific.ProtocolDataOffset = uint32(headerSize)
+
+	// logId == NVME_LOG_PAGE_HEALTH_INFO
+	nptwb.ProtocolSpecific.ProtocolDataRequestSubValue = 0  // This will be passed as the lower 32 bit of log page offset if controller supports extended data for the Get Log Page.
+	nptwb.ProtocolSpecific.ProtocolDataRequestSubValue2 = 0 // This will be passed as the higher 32 bit of log page offset if controller supports extended data for the Get Log Page.
+	nptwb.ProtocolSpecific.ProtocolDataRequestSubValue3 = 0 // This will be passed as Log Specific Identifier in CDW11.
+	nptwb.ProtocolSpecific.ProtocolDataRequestSubValue4 = 0 // This will map to STORAGE_PROTOCOL_DATA_SUBVALUE_GET_LOG_PAGE definition, then user can pass Retain Asynchronous Event, Log Specific Field.
+
+	nptwb.ProtocolSpecific.ProtocolDataOffset = uint32(uintptr(headerSize) - unsafe.Sizeof(nptwb.Query))
 	nptwb.ProtocolSpecific.ProtocolDataLength = uint32(dataSize)
 
 	var bytesReturned uint32
@@ -130,6 +136,13 @@ func (s *WindowsNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae 
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	sizeOfSTORAGE_PROTOCOL_DATA_DESCRIPTOR := uint32(unsafe.Sizeof(STORAGE_PROTOCOL_DATA_DESCRIPTOR{}))
+	resultProtocolDataDesc := (*STORAGE_PROTOCOL_DATA_DESCRIPTOR)(unsafe.Pointer(&buffer[0]))
+
+	if resultProtocolDataDesc.Version != sizeOfSTORAGE_PROTOCOL_DATA_DESCRIPTOR || resultProtocolDataDesc.Size != sizeOfSTORAGE_PROTOCOL_DATA_DESCRIPTOR {
+		return nil, fmt.Errorf("invalid response header: 0x%x, 0x%x", resultProtocolDataDesc.Version, resultProtocolDataDesc.Size)
 	}
 
 	return buffer[headerSize:], nil
