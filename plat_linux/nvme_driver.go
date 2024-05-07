@@ -23,7 +23,7 @@ type LinuxNvmeDriverHandle struct {
 	common.NvmeDriverHandle
 	fd       int
 	ns_id    int
-	identity [4096]byte
+	identity []byte
 }
 
 func NewLinuxNvmeDriver() *LinuxNvmeDriver {
@@ -47,7 +47,7 @@ func (d *LinuxNvmeDriver) openImpl(fd int) (*LinuxNvmeDriverHandle, error) {
 		return nil, fmt.Errorf("invalid identity size: %d", len(identity))
 	}
 
-	copy(driverHandle.identity[:], identity)
+	driverHandle.identity = identity
 
 	return driverHandle, nil
 }

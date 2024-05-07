@@ -120,8 +120,8 @@ func (d *NvmeWinDriver) openImpl(handle windows.Handle) (*NvmeWinDriverHandle, e
 	driverHandle := &NvmeWinDriverHandle{
 		handle:     handle,
 		scsiHandle: scsiHandle,
+		identity:   identity,
 	}
-	copy(driverHandle.identity[:], identity)
 
 	return driverHandle, nil
 }

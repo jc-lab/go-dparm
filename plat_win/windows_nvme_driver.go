@@ -20,7 +20,7 @@ type WindowsNvmeDriver struct {
 type WindowsNvmeDriverHandle struct {
 	common.NvmeDriverHandle
 	handle   windows.Handle
-	identity [4096]byte
+	identity []byte
 }
 
 func NewWindowsNvmeDriver() *WindowsNvmeDriver {
@@ -72,9 +72,9 @@ func (d *WindowsNvmeDriver) openImpl(handle windows.Handle) (*WindowsNvmeDriverH
 	}
 
 	driverHandle := &WindowsNvmeDriverHandle{
-		handle: handle,
+		handle:   handle,
+		identity: identity,
 	}
-	copy(driverHandle.identity[:], identity)
 
 	return driverHandle, nil
 }
