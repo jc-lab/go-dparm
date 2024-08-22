@@ -12,17 +12,20 @@ import (
 	"github.com/jc-lab/go-dparm/internal/direct_mbr"
 	"log"
 	"strings"
+	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
 )
 
 type LinuxBasicInfo struct {
-	PartitionStyle common.PartitionStyle
-	PartitionTable partition.Table
-	DiskGeometry   unix.HDGeometry
-	MbrSignature   uint32
-	GptDiskId      string
+	PartitionStyle  common.PartitionStyle
+	PartitionTable  partition.Table
+	DiskGeometry    unix.HDGeometry
+	MbrSignature    uint32
+	GptDiskId       string
+	BlockTotalBytes int64
+	BlockSectorSize int
 }
 
 func OpenDevice(path string) (int, error) {
@@ -36,6 +39,18 @@ func ReadBasicInfo(fd int, path string) (*LinuxBasicInfo, error) {
 	dev, err := diskfs.Open(path, diskfs.WithOpenMode(diskfs.ReadOnly))
 	if err != nil {
 		return nil, common.NewNestedError(path+" diskfs.open failed", err)
+	}
+
+	// Get sector size
+	var sectorSize int
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), unix.BLKSSZGET, uintptr(unsafe.Pointer(&sectorSize))); errno == 0 {
+		result.BlockSectorSize = sectorSize
+	}
+
+	// Get device size in bytes
+	var size uint64
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), unix.BLKGETSIZE64, uintptr(unsafe.Pointer(&size))); errno == 0 {
+		result.BlockTotalBytes = int64(size)
 	}
 
 	_, _, err = unix.Syscall(

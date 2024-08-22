@@ -65,6 +65,7 @@ func (f *LinuxDriveFactory) OpenByFd(fd int, path string) (common.DriveHandle, e
 		impl.Info.PartitionStyle = basicInfo.PartitionStyle
 		impl.Info.GptDiskId = basicInfo.GptDiskId
 		impl.Info.MbrDiskSignature = basicInfo.MbrSignature
+		impl.Info.TotalCapacity = basicInfo.BlockTotalBytes
 	}
 
 	// Try to get incomplete data first in case of inquiry failure..
