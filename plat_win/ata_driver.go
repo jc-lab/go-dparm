@@ -64,7 +64,6 @@ func (d *AtaDriver) openImpl(handle windows.Handle) (*AtaDriverHandle, error) {
 
 	dataBuffer.ResetRead()
 	dataBuffer.Read(driverHandle.identity[:])
-	internal.AtaSwapWordEndian(driverHandle.identity[:])
 
 	return driverHandle, nil
 }

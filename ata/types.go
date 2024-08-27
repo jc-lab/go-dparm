@@ -170,6 +170,37 @@ type IdentityWord59 struct {
 	//BlockEraseExtCommandSupported: 1 uint8 `struc:"uint8"`
 }
 
+func (w *IdentityWord59) IsMultiSectorSettingValid() bool {
+	return w.B&0x01 != 0
+}
+
+func (w *IdentityWord59) IsBlockEraseExtSupported() bool {
+	return w.B&0x80 != 0
+}
+
+func (w *IdentityWord59) IsOverwriteExtSupported() bool {
+	return w.B&0x40 != 0
+}
+
+func (w *IdentityWord59) IsCryptoScrambleExtSupported() bool {
+	return w.B&0x20 != 0
+}
+
+func (w *IdentityWord59) IsSanitizeFeatureSetSupported() bool {
+	return w.B&0x10 != 0
+}
+
+// IsSanitizeOperationStandardCompliant
+//   - true: The commands allowed during a sanitize operation are as specified by this standard (see 4.17.5)
+//   - false: The commands allowed during a sanitize operation are as specified by ACS-2
+func (w *IdentityWord59) IsSanitizeOperationStandardCompliant() bool {
+	return w.B&0x08 != 0
+}
+
+func (w *IdentityWord59) IsSanitizeAntifreezeLockExtSupported() bool {
+	return w.B&0x04 != 0
+}
+
 type IdentityAdditionalSupported struct {
 	A uint16 `struc:"uint16"`
 }
@@ -355,7 +386,7 @@ type IdentityDeviceData struct {
 	StreamingAccessLatencyDmaPio uint16 `struc:"uint16"` // word 97
 	StreamingPerfGranularity     uint32 `struc:"uint32"` // word 98 99
 
-	Max48bitLba [2]uint32 `struc:"[2]uint32"` // word 100-103
+	Max48bitLba uint64 `struc:"uint64"` // word 100-103
 
 	StreamingTransferTime uint16 `struc:"uint16"` // word 104. Streaming Transfer Time - PIO
 

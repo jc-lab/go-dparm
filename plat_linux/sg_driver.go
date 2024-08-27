@@ -75,7 +75,6 @@ func (d *SgDriver) openImpl(fd int) (*SgDriverHandle, error) {
 	}
 	dataBuffer.ResetRead()
 	dataBuffer.Read(driverHandle.identity[:])
-	internal.AtaSwapWordEndian(driverHandle.identity[:])
 
 	return driverHandle, nil
 }

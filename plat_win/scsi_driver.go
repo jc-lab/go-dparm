@@ -57,7 +57,6 @@ func (d *ScsiDriver) openImpl(handle windows.Handle) (*ScsiDriverHandle, error) 
 
 	dataBuffer.ResetRead()
 	dataBuffer.Read(driverHandle.identity[:])
-	internal.AtaSwapWordEndian(driverHandle.identity[:])
 
 	return driverHandle, nil
 }

@@ -29,10 +29,15 @@ func (p *DriveHandleImpl) Init() error {
 		p.Info.AtaIdentityRaw = identityRaw
 
 		identity := &ata.IdentityDeviceData{}
-		if err := struc.Unpack(internal.NewWrappedBuffer(identityRaw), identity); err != nil {
+		strucOpts := internal.GetStrucOptions()
+		if err := struc.UnpackWithOptions(internal.NewWrappedBuffer(identityRaw), identity, strucOpts); err != nil {
 			return err
 		}
 		p.Info.AtaIdentity = identity
+
+		internal.AtaSwapWordEndian(identity.ModelNumber[:])
+		internal.AtaSwapWordEndian(identity.SerialNumber[:])
+		internal.AtaSwapWordEndian(identity.FirmwareRevision[:])
 
 		p.Info.Model = strings.Trim(string(identity.ModelNumber[:]), trimSet)
 		p.Info.FirmwareRevision = strings.Trim(string(identity.FirmwareRevision[:]), trimSet)
