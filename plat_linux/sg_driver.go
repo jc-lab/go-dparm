@@ -118,6 +118,7 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				Command:         uint8(tf.Command),
 				Control:         0, // always zero
 			}
+			cdb.B01 |= SG_ATA_LBA48
 			if dma {
 				cdb.SetProtocol(uint8(internal.Ternary(data != nil, SG_ATA_PROTO_DMA, SG_ATA_PROTO_NON_DATA)))
 			} else {
@@ -189,18 +190,23 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 			}
 		}
 
-		sgParams.DxferLen = uint32(len(data))
+		sgParams.DxferLen = 0
+		if data != nil {
+			sgParams.DxferLen = uint32(len(data))
+		}
 
 		if retry == 0 {
 			var alignedBuffer *internal.AlignedBuffer = nil
-			sgParams.Dxferp = uintptr(unsafe.Pointer(&data[0]))
-			if !internal.IsAlignedPointer(512, sgParams.Dxferp) {
-				alignedBuffer = internal.NewAlignedBuffer(512, len(data))
-				if rw {
-					alignedBuffer.ResetWrite()
-					alignedBuffer.Write(data)
+			if data != nil {
+				sgParams.Dxferp = uintptr(unsafe.Pointer(&data[0]))
+				if !internal.IsAlignedPointer(512, sgParams.Dxferp) {
+					alignedBuffer = internal.NewAlignedBuffer(512, len(data))
+					if rw {
+						alignedBuffer.ResetWrite()
+						alignedBuffer.Write(data)
+					}
+					sgParams.Dxferp = uintptr(unsafe.Pointer(alignedBuffer.GetPointer()))
 				}
-				sgParams.Dxferp = uintptr(unsafe.Pointer(alignedBuffer.GetPointer()))
 			}
 
 			_, _, err := unix.Syscall(
@@ -224,7 +230,9 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 
 			buffer := make([]byte, n+len(data))
 			copyFromPointer(buffer, unsafe.Pointer(&sgParams), int(unsafe.Sizeof(sgParams)))
-			copy(buffer[n:], data)
+			if data != nil {
+				copy(buffer[n:], data)
+			}
 
 			_, _, err := unix.Syscall(
 				unix.SYS_IOCTL,
@@ -237,7 +245,7 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 			} else {
 				rootError = nil
 				copyToPointer(unsafe.Pointer(&sgParams), buffer[:], int(unsafe.Sizeof(sgParams)))
-				if !rw {
+				if !rw && data != nil {
 					copy(data, buffer[n:])
 				}
 			}
@@ -258,6 +266,29 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				SenseData: &senseInfo,
 			}
 		}
+	}
+
+	desc := sgParams.SenseData[8:]
+
+	tf.IsLba48 = desc[2] & 1
+	tf.Error = desc[3]
+	tf.Lob.Nsect = desc[5]
+	tf.Lob.Lbal = desc[7]
+	tf.Lob.Lbam = desc[9]
+	tf.Lob.Lbah = desc[11]
+	tf.Dev = desc[12]
+	tf.Status = desc[13]
+	tf.Hob.Feat = 0
+	if tf.IsLba48 != 0 {
+		tf.Hob.Nsect = desc[4]
+		tf.Hob.Lbal = desc[6]
+		tf.Hob.Lbam = desc[8]
+		tf.Hob.Lbah = desc[10]
+	} else {
+		tf.Hob.Nsect = 0
+		tf.Hob.Lbal = 0
+		tf.Hob.Lbam = 0
+		tf.Hob.Lbah = 0
 	}
 
 	return rootError
