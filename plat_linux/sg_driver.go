@@ -305,7 +305,7 @@ func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16
 
 	for retry := 0; retry < 2; retry++ {
 		sgParams.InterfaceID = 'S'
-		sgParams.Timeout = uint32(timeoutSecs)
+		sgParams.Timeout = uint32(timeoutSecs) * 1000
 		sgParams.DxferDirection = int32(internal.Ternary(rw, SG_DXFER_FROM_DEV, SG_DXFER_TO_DEV))
 		sgParams.SbLenWr = byte(unsafe.Sizeof(sgParams.SenseData))
 		sgParams.Sbp = &sgParams.SenseData[0]
