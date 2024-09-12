@@ -6,8 +6,9 @@ package plat_linux
 import (
 	"errors"
 	"fmt"
-	common_nvme "github.com/jc-lab/go-dparm/common/nvme"
 	"unsafe"
+
+	common_nvme "github.com/jc-lab/go-dparm/common/nvme"
 
 	"golang.org/x/sys/unix"
 
@@ -85,9 +86,6 @@ func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) erro
 	data.Cdw3 = cmd.Cdw3
 	data.Metadata = cmd.Metadata
 	data.Addr = cmd.GetDataAddr()
-	if data.Addr == 0 {
-		return errors.New("addr is null")
-	}
 	data.MetadataLen = cmd.MetadataLen
 	data.DataLen = cmd.DataLen
 	data.Cdw10 = cmd.Cdw10

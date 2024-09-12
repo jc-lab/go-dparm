@@ -467,7 +467,9 @@ func (cmd *PassthruCmd) GetDataAddr() uint64 {
 func (cmd *NvmeAdminCmd) GetDataAddr() uint64 {
 	if cmd.DataAddr != 0 {
 		return uint64(cmd.DataAddr)
-	} else {
+	} else if len(cmd.DataBuffer) != 0 {
 		return uint64(uintptr(unsafe.Pointer(&cmd.DataBuffer[0])))
 	}
+
+	return 0
 }
