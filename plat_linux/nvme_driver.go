@@ -118,9 +118,6 @@ func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *nvme.PassthruCmd) error {
 	data.Cdw3 = cmd.Cdw3
 	data.Metadata = cmd.Metadata
 	data.Addr = cmd.GetDataAddr()
-	if data.Addr == 0 {
-		return errors.New("addr is null")
-	}
 	data.MetadataLen = cmd.MetadataLen
 	data.Cdw10 = cmd.Cdw10
 	data.Cdw11 = cmd.Cdw11
