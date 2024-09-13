@@ -6,7 +6,6 @@ package plat_linux
 import (
 	"log"
 	"strings"
-	"syscall"
 	"unsafe"
 
 	"github.com/diskfs/go-diskfs"
@@ -44,7 +43,7 @@ func ReadBasicInfo(fd int, path string) (*LinuxBasicInfo, error) {
 
 	// Get sector size
 	var sectorSize int
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), unix.BLKSSZGET, uintptr(unsafe.Pointer(&sectorSize))); errno == 0 {
+	if err := ioctl(fd, unix.BLKSSZGET, uintptr(unsafe.Pointer(&sectorSize))); err == nil {
 		result.BlockSectorSize = sectorSize
 	}
 
@@ -82,7 +81,7 @@ func ioctl(fd int, op, arg uintptr) error {
 		unix.SYS_IOCTL,
 		uintptr(fd),
 		op,
-		uintptr(unsafe.Pointer(&arg)),
+		arg,
 	)
 
 	if err != 0 {
