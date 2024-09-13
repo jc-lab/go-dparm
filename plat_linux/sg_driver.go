@@ -81,7 +81,7 @@ func (d *SgDriver) openImpl(fd int) (*SgDriverHandle, error) {
 
 func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []byte, timeoutSecs int) error {
 	strucOpts := internal.GetStrucOptions()
-	var rootError error = nil
+	var rootError error
 
 	if rw && data != nil {
 		for i := range data {
@@ -209,14 +209,16 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				}
 			}
 
-			_, _, err := unix.Syscall(
+			ret, _, err := unix.Syscall(
 				unix.SYS_IOCTL,
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
 			)
-			if err != unix.Errno(0) {
+			if err != 0 {
 				rootError = err
+			} else if ret != 0 {
+				rootError = unix.Errno(ret)
 			} else {
 				if !rw && alignedBuffer != nil {
 					alignedBuffer.ResetRead()
@@ -234,14 +236,16 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				copy(buffer[n:], data)
 			}
 
-			_, _, err := unix.Syscall(
+			ret, _, err := unix.Syscall(
 				unix.SYS_IOCTL,
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
 			)
-			if err != unix.Errno(0) {
+			if err != 0 {
 				rootError = err
+			} else if ret != 0 {
+				rootError = unix.Errno(ret)
 			} else {
 				rootError = nil
 				copyToPointer(unsafe.Pointer(&sgParams), buffer[:], int(unsafe.Sizeof(sgParams)))
@@ -323,7 +327,7 @@ func (s *SgDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comI
 }
 
 func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16, data []byte, timeoutSecs int) error {
-	var rootError error = nil
+	var rootError error
 
 	if rw && data != nil {
 		for i := range data {
@@ -377,13 +381,15 @@ func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16
 				sgParams.Dxferp = uintptr(unsafe.Pointer(alignedBuffer.GetPointer()))
 			}
 
-			if _, _, err := unix.Syscall(
+			if ret, _, err := unix.Syscall(
 				unix.SYS_IOCTL,
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
 			); err != 0 {
 				rootError = err
+			} else if ret != 0 {
+				rootError = unix.Errno(ret)
 			} else {
 				if !rw && alignedBuffer != nil {
 					alignedBuffer.ResetRead()
@@ -399,13 +405,15 @@ func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16
 			copyFromPointer(buffer, unsafe.Pointer(&sgParams), int(unsafe.Sizeof(sgParams)))
 			copy(buffer[n:], data)
 
-			if _, _, err := unix.Syscall(
+			if ret, _, err := unix.Syscall(
 				unix.SYS_IOCTL,
 				uintptr(fd),
 				uintptr(SG_IO),
 				uintptr(unsafe.Pointer(&sgParams)),
 			); err != 0 {
 				rootError = err
+			} else if ret != 0 {
+				rootError = unix.Errno(ret)
 			} else {
 				rootError = nil
 				copyToPointer(unsafe.Pointer(&sgParams), buffer[:], int(unsafe.Sizeof(sgParams)))

@@ -4,16 +4,17 @@
 package plat_linux
 
 import (
+	"log"
+	"strings"
+	"syscall"
+	"unsafe"
+
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/partition"
 	"github.com/diskfs/go-diskfs/partition/gpt"
 	"github.com/diskfs/go-diskfs/partition/mbr"
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/internal/direct_mbr"
-	"log"
-	"strings"
-	"syscall"
-	"unsafe"
 
 	"golang.org/x/sys/unix"
 )
@@ -53,13 +54,16 @@ func ReadBasicInfo(fd int, path string) (*LinuxBasicInfo, error) {
 		result.BlockTotalBytes = int64(size)
 	}
 
-	_, _, err = unix.Syscall(
+	ret, _, err := unix.Syscall(
 		unix.SYS_IOCTL,
 		uintptr(fd),
 		unix.HDIO_GETGEO,
 		uintptr(unsafe.Pointer(&result.DiskGeometry)),
 	)
-	if err != unix.Errno(0) {
+	if err != unix.Errno(0) || ret != 0 {
+		if err == unix.Errno(0) && ret != 0 {
+			err = unix.Errno(ret)
+		}
 		return nil, common.NewNestedError(path+" HDIO_GETGEO failed", err)
 	}
 
