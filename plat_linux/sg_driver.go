@@ -209,16 +209,8 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				}
 			}
 
-			ret, _, err := unix.Syscall(
-				unix.SYS_IOCTL,
-				uintptr(fd),
-				uintptr(SG_IO),
-				uintptr(unsafe.Pointer(&sgParams)),
-			)
-			if err != 0 {
+			if err := ioctl(fd, SG_IO, uintptr(unsafe.Pointer(&sgParams))); err != nil {
 				rootError = err
-			} else if ret != 0 {
-				rootError = unix.Errno(ret)
 			} else {
 				if !rw && alignedBuffer != nil {
 					alignedBuffer.ResetRead()
@@ -236,16 +228,8 @@ func (d *SgDriver) doTaskFileCmd(fd int, rw bool, dma bool, tf *ata.Tf, data []b
 				copy(buffer[n:], data)
 			}
 
-			ret, _, err := unix.Syscall(
-				unix.SYS_IOCTL,
-				uintptr(fd),
-				uintptr(SG_IO),
-				uintptr(unsafe.Pointer(&sgParams)),
-			)
-			if err != 0 {
+			if err := ioctl(fd, SG_IO, uintptr(unsafe.Pointer(&sgParams))); err != nil {
 				rootError = err
-			} else if ret != 0 {
-				rootError = unix.Errno(ret)
 			} else {
 				rootError = nil
 				copyToPointer(unsafe.Pointer(&sgParams), buffer[:], int(unsafe.Sizeof(sgParams)))
@@ -381,15 +365,8 @@ func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16
 				sgParams.Dxferp = uintptr(unsafe.Pointer(alignedBuffer.GetPointer()))
 			}
 
-			if ret, _, err := unix.Syscall(
-				unix.SYS_IOCTL,
-				uintptr(fd),
-				uintptr(SG_IO),
-				uintptr(unsafe.Pointer(&sgParams)),
-			); err != 0 {
+			if err := ioctl(fd, SG_IO, uintptr(unsafe.Pointer(&sgParams))); err != nil {
 				rootError = err
-			} else if ret != 0 {
-				rootError = unix.Errno(ret)
 			} else {
 				if !rw && alignedBuffer != nil {
 					alignedBuffer.ResetRead()
@@ -405,15 +382,8 @@ func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16
 			copyFromPointer(buffer, unsafe.Pointer(&sgParams), int(unsafe.Sizeof(sgParams)))
 			copy(buffer[n:], data)
 
-			if ret, _, err := unix.Syscall(
-				unix.SYS_IOCTL,
-				uintptr(fd),
-				uintptr(SG_IO),
-				uintptr(unsafe.Pointer(&sgParams)),
-			); err != 0 {
+			if err := ioctl(fd, SG_IO, uintptr(unsafe.Pointer(&sgParams))); err != nil {
 				rootError = err
-			} else if ret != 0 {
-				rootError = unix.Errno(ret)
 			} else {
 				rootError = nil
 				copyToPointer(unsafe.Pointer(&sgParams), buffer[:], int(unsafe.Sizeof(sgParams)))
