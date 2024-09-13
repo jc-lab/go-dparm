@@ -4,16 +4,17 @@
 package plat_linux
 
 import (
+	"log"
+	"strings"
+	"syscall"
+	"unsafe"
+
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/partition"
 	"github.com/diskfs/go-diskfs/partition/gpt"
 	"github.com/diskfs/go-diskfs/partition/mbr"
 	"github.com/jc-lab/go-dparm/common"
 	"github.com/jc-lab/go-dparm/internal/direct_mbr"
-	"log"
-	"strings"
-	"syscall"
-	"unsafe"
 
 	"golang.org/x/sys/unix"
 )
@@ -49,17 +50,11 @@ func ReadBasicInfo(fd int, path string) (*LinuxBasicInfo, error) {
 
 	// Get device size in bytes
 	var size uint64
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), unix.BLKGETSIZE64, uintptr(unsafe.Pointer(&size))); errno == 0 {
+	if err := ioctl(fd, unix.BLKGETSIZE64, uintptr(unsafe.Pointer(&size))); err == nil {
 		result.BlockTotalBytes = int64(size)
 	}
 
-	_, _, err = unix.Syscall(
-		unix.SYS_IOCTL,
-		uintptr(fd),
-		unix.HDIO_GETGEO,
-		uintptr(unsafe.Pointer(&result.DiskGeometry)),
-	)
-	if err != unix.Errno(0) {
+	if err = ioctl(fd, unix.HDIO_GETGEO, uintptr(unsafe.Pointer(&result.DiskGeometry))); err != nil {
 		return nil, common.NewNestedError(path+" HDIO_GETGEO failed", err)
 	}
 
@@ -80,6 +75,23 @@ func ReadBasicInfo(fd int, path string) (*LinuxBasicInfo, error) {
 	}
 
 	return result, nil
+}
+
+func ioctl(fd int, op, arg uintptr) error {
+	ret, _, err := unix.Syscall(
+		unix.SYS_IOCTL,
+		uintptr(fd),
+		op,
+		uintptr(unsafe.Pointer(&arg)),
+	)
+
+	if err != 0 {
+		return err
+	} else if ret != 0 {
+		return unix.Errno(ret)
+	}
+
+	return nil
 }
 
 func readNullTerminatedAscii(buf []byte, offset int) string {

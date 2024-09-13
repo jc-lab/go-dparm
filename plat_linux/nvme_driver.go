@@ -8,11 +8,10 @@ import (
 	"fmt"
 	"unsafe"
 
-	common_nvme "github.com/jc-lab/go-dparm/common/nvme"
-
 	"golang.org/x/sys/unix"
 
 	"github.com/jc-lab/go-dparm/common"
+	common_nvme "github.com/jc-lab/go-dparm/common/nvme"
 	"github.com/jc-lab/go-dparm/nvme"
 )
 
@@ -96,16 +95,8 @@ func (s *LinuxNvmeDriverHandle) DoNvmeAdminPassthru(cmd *nvme.NvmeAdminCmd) erro
 	data.Cdw15 = cmd.Cdw15
 	data.TimeoutMs = cmd.TimeoutMs
 	data.Result = cmd.Result
-	_, _, err := unix.Syscall(
-		unix.SYS_IOCTL,
-		uintptr(s.fd),
-		NVME_IOCTL_ADMIN_CMD,
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if err != unix.Errno(0) {
-		return err
-	}
-	return nil
+
+	return ioctl(s.fd, NVME_IOCTL_ADMIN_CMD, uintptr(unsafe.Pointer(&data)))
 }
 
 func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *nvme.PassthruCmd) error {
@@ -127,17 +118,8 @@ func (s *LinuxNvmeDriverHandle) DoNvmeIoPassthru(cmd *nvme.PassthruCmd) error {
 	data.Cdw15 = cmd.Cdw15
 	data.TimeoutMs = cmd.TimeoutMs
 	data.Result = cmd.Result
-	_, _, err := unix.Syscall(
-		unix.SYS_IOCTL,
-		uintptr(s.fd),
-		NVME_IOCTL_IO_CMD,
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if err != unix.Errno(0) {
-		return err
-	}
 
-	return nil
+	return ioctl(s.fd, NVME_IOCTL_IO_CMD, uintptr(unsafe.Pointer(&data)))
 }
 
 func (s *LinuxNvmeDriverHandle) DoNvmeIo(io *nvme.UserIo) error {
@@ -154,17 +136,8 @@ func (s *LinuxNvmeDriverHandle) DoNvmeIo(io *nvme.UserIo) error {
 	data.Reftag = io.Reftag
 	data.Apptag = io.Apptag
 	data.Appmask = io.Appmask
-	_, _, err := unix.Syscall(
-		unix.SYS_IOCTL,
-		uintptr(s.fd),
-		NVME_IOCTL_SUBMIT_IO,
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if err != unix.Errno(0) {
-		return err
-	}
 
-	return nil
+	return ioctl(s.fd, NVME_IOCTL_SUBMIT_IO, uintptr(unsafe.Pointer(&data)))
 }
 
 func (s *LinuxNvmeDriverHandle) GetDriverName() string {
