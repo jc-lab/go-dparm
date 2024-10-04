@@ -57,9 +57,23 @@ func (b *AlignedBuffer) GetCapacity() int {
 	return b.capacity
 }
 
+func (b *AlignedBuffer) GetPos() int {
+	return b.writerPos
+}
+
 func (b *AlignedBuffer) SetLimit(limit int) {
 	b.limit = limit
 	b.refBuf = unsafe.Slice(b.pointer, b.limit)
+}
+
+func (b *AlignedBuffer) Reset() {
+	b.ResetRead()
+	b.ResetWrite()
+
+	// memclr
+	for i := range b.refBuf {
+		b.refBuf[i] = 0
+	}
 }
 
 func (b *AlignedBuffer) ResetWrite() {
@@ -68,6 +82,17 @@ func (b *AlignedBuffer) ResetWrite() {
 
 func (b *AlignedBuffer) ResetRead() {
 	b.readerPos = 0
+}
+
+func (b *AlignedBuffer) WriteByte(p byte) (err error) {
+	if b.writerPos >= b.limit {
+		return io.EOF
+	}
+
+	b.refBuf[b.writerPos] = p
+	b.writerPos++
+
+	return nil
 }
 
 func (b *AlignedBuffer) Write(p []byte) (n int, err error) {

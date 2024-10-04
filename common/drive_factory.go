@@ -21,8 +21,6 @@ type DriveHandle interface {
 
 	// COMMON
 	SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error
-
-	TcgDiscovery0() error
 }
 
 type EnumVolumeContext interface {

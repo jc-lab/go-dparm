@@ -293,8 +293,25 @@ type OpalHeader struct {
 	Subpkt OpalDataSubPacket
 }
 
-type OpalUID = [8]byte
-type OpalMethod = [8]byte
+type Buf []byte
+
+type invokingUID interface {
+	invokingUid() // dummy
+}
+
+type signAuthority interface {
+	signAuthority() // dummy
+}
+
+type OpalUID [8]byte
+type OpalMethod [8]byte
+
+func (Buf) invokingUid()        {}
+func (OpalUID) invokingUid()    {}
+func (OpalMethod) invokingUid() {}
+
+func (Buf) signAuthority()     {}
+func (OpalUID) signAuthority() {}
 
 var (
 	SMUID_UID                  OpalUID = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff}
@@ -509,3 +526,14 @@ const (
 	AUTHORITY_LOCKED_OUT  OpalStatusCode = 0x12
 	FAIL                  OpalStatusCode = 0x3F
 )
+
+type token interface {
+	token() // dummy
+}
+
+func (OpalToken) token()        {}
+func (OpalTinyAtom) token()     {}
+func (OpalShortAtom) token()    {}
+func (OpalLockingState) token() {}
+func (OpalUID) token()          {}
+func (OpalMethod) token()       {}
