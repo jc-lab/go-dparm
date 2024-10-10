@@ -19,7 +19,7 @@ func (p *TcgDeviceOpal1) GetDeviceType() TcgDeviceType {
 }
 
 func (p *TcgDeviceOpal1) GetBaseComId() uint16 {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	rawBuf, ok := tcgDh.TcgRawFeatures[uint16(FcOpalSscV100)]
 	if !ok {
 		return 0
@@ -31,7 +31,7 @@ func (p *TcgDeviceOpal1) GetBaseComId() uint16 {
 }
 
 func (p *TcgDeviceOpal1) GetNumComIds() uint16 {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	rawBuf, ok := tcgDh.TcgRawFeatures[uint16(FcOpalSscV100)]
 	if !ok {
 		return 0
@@ -67,7 +67,7 @@ func (p *TcgDeviceOpal2) GetDeviceType() TcgDeviceType {
 }
 
 func (p *TcgDeviceOpal2) GetBaseComId() uint16 {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	rawBuf, ok := tcgDh.TcgRawFeatures[uint16(FcOpalSscV200)]
 	if !ok {
 		return 0
@@ -79,7 +79,7 @@ func (p *TcgDeviceOpal2) GetBaseComId() uint16 {
 }
 
 func (p *TcgDeviceOpal2) GetNumComIds() uint16 {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	rawBuf, ok := tcgDh.TcgRawFeatures[uint16(FcOpalSscV200)]
 	if !ok {
 		return 0

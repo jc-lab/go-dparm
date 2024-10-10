@@ -16,9 +16,7 @@ func TcgHashPassword(device TcgDevice, noHashPassword bool, password string) []u
 	if noHashPassword {
 		outHash = append([]uint8{0xd0, uint8(len(password))}, []uint8(password)...)
 	} else {
-		driveInfo := device.GetDriveHandle().GetDriveInfo()
-
-		derived := pbkdf2.Key([]byte(password), driveInfo.RawSerial[:], 75000, 32, sha1.New)
+		derived := pbkdf2.Key([]byte(password), []byte(device.GetSerial()), 75000, 32, sha1.New)
 		outHash = append([]uint8{0xd0, uint8(len(derived))}, derived...)
 	}
 

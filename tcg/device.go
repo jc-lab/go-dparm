@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 	"unsafe"
-
-	"github.com/jc-lab/go-dparm/common"
 )
 
 type TcgDeviceType uint32
@@ -19,7 +17,7 @@ const (
 )
 
 type TcgDevice interface {
-	GetDriveHandle() common.DriveHandle
+	GetSerial() string
 
 	GetDeviceType() TcgDeviceType
 	IsAnySSC() bool
@@ -44,15 +42,11 @@ type TcgDevice interface {
 
 type TcgDeviceImpl struct {
 	dev TcgDevice
-	dh  common.DriveHandle
+	dh  *TcgDriveHandle
 }
 
-func NewTcgDevice(driveHandle common.DriveHandle) (TcgDevice, error) {
-	tcgDriveHandle := NewTcgDriveHandle(driveHandle)
-
-	if err := tcgDriveHandle.TcgDiscovery0(); err != nil {
-		return nil, err
-	}
+func NewTcgDevice(dch DriveCommandHandler) (TcgDevice, error) {
+	tcgDriveHandle := NewTcgDriveHandle(dch)
 
 	base := TcgDeviceImpl{
 		dh: tcgDriveHandle,
@@ -86,8 +80,8 @@ func NewTcgDevice(driveHandle common.DriveHandle) (TcgDevice, error) {
 	return &base, nil
 }
 
-func (p *TcgDeviceImpl) GetDriveHandle() common.DriveHandle {
-	return p.dh
+func (p *TcgDeviceImpl) GetSerial() string {
+	return p.dh.serial
 }
 
 func (p *TcgDeviceImpl) GetDeviceType() TcgDeviceType {
@@ -99,11 +93,11 @@ func (p *TcgDeviceImpl) IsAnySSC() bool {
 }
 
 func (p *TcgDeviceImpl) IsLockingSupported() bool {
-	return p.dh.(*TcgDriveHandle).TcgLocking
+	return p.dh.TcgLocking
 }
 
 func (p *TcgDeviceImpl) IsLockingEnabled() bool {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	if !tcgDh.TcgLocking {
 		return false
 	}
@@ -118,7 +112,7 @@ func (p *TcgDeviceImpl) IsLockingEnabled() bool {
 }
 
 func (p *TcgDeviceImpl) IsLocked() bool {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	if !tcgDh.TcgLocking {
 		return false
 	}
@@ -133,7 +127,7 @@ func (p *TcgDeviceImpl) IsLocked() bool {
 }
 
 func (p *TcgDeviceImpl) IsMBREnabled() bool {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	if !tcgDh.TcgLocking {
 		return false
 	}
@@ -148,7 +142,7 @@ func (p *TcgDeviceImpl) IsMBREnabled() bool {
 }
 
 func (p *TcgDeviceImpl) IsMBRDone() bool {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	if !tcgDh.TcgLocking {
 		return false
 	}
@@ -163,7 +157,7 @@ func (p *TcgDeviceImpl) IsMBRDone() bool {
 }
 
 func (p *TcgDeviceImpl) IsMediaEncryption() bool {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	if !tcgDh.TcgLocking {
 		return false
 	}

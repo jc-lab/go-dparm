@@ -14,7 +14,7 @@ func (p *TcgDeviceEnterprise) GetDeviceType() TcgDeviceType {
 }
 
 func (p *TcgDeviceEnterprise) GetBaseComId() uint16 {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	rawBuf, ok := tcgDh.TcgRawFeatures[uint16(FcEnterprise)]
 	if !ok {
 		return 0
@@ -26,7 +26,7 @@ func (p *TcgDeviceEnterprise) GetBaseComId() uint16 {
 }
 
 func (p *TcgDeviceEnterprise) GetNumComIds() uint16 {
-	tcgDh := p.dh.(*TcgDriveHandle)
+	tcgDh := p.dh
 	rawBuf, ok := tcgDh.TcgRawFeatures[uint16(FcEnterprise)]
 	if !ok {
 		return 0

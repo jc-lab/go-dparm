@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/jc-lab/go-dparm/ata"
+	"github.com/jc-lab/go-dparm/tcg"
 )
 
 type DriveHandle interface {
@@ -21,6 +22,9 @@ type DriveHandle interface {
 
 	// COMMON
 	SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error
+
+	// TCG
+	GetTcgLevel0InfoAndSerial() (tcg.TcgLevel0Info, string)
 }
 
 type EnumVolumeContext interface {
