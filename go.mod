@@ -7,7 +7,8 @@ require (
 	github.com/diskfs/go-diskfs v1.4.0
 	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40
 	github.com/stretchr/testify v1.8.2
-	golang.org/x/sys v0.7.0
+	golang.org/x/crypto v0.27.0
+	golang.org/x/sys v0.25.0
 )
 
 require (

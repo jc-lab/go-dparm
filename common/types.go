@@ -3,6 +3,7 @@ package common
 import (
 	"github.com/jc-lab/go-dparm/ata"
 	"github.com/jc-lab/go-dparm/nvme"
+	"github.com/jc-lab/go-dparm/tcg"
 )
 
 type PartitionStyle int
@@ -86,17 +87,8 @@ type DriveInfo struct {
 	SsdCheckWeight int
 	TotalCapacity  int64
 
-	TcgSupport           int
-	TcgTper              bool
-	TcgLocking           bool
-	TcgGeometryReporting bool
-	TcgOpalSscV100       bool
-	TcgOpalSscV200       bool
-	TcgEnterprise        bool
-	TcgSingleUser        bool
-	TcgDataStore         bool
-
-	TcgRawFeatures map[uint16][]byte
+	TcgSupport int
+	tcg.TcgLevel0Info
 
 	Removable  int
 	DriveType  DriveType

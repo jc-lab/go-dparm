@@ -205,5 +205,5 @@ func (s *AtaDriverHandle) DoTaskFileCmd(rw bool, dma bool, tf *ata.Tf, data []by
 }
 
 func (s *AtaDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
-	return errors.New("Not supported")
+	return errors.New("not supported")
 }

@@ -4,7 +4,6 @@
 package plat_linux
 
 import (
-	"errors"
 	"fmt"
 	"unsafe"
 
@@ -165,5 +164,5 @@ func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bo
 }
 
 func (s *LinuxNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
-	return errors.New("Not supported")
+	return fmt.Errorf("not supported")
 }

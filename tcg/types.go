@@ -293,8 +293,32 @@ type OpalHeader struct {
 	Subpkt OpalDataSubPacket
 }
 
-type OpalUID = [8]byte
-type OpalMethod = [8]byte
+type Buf []byte
+
+type invokingUID interface {
+	invokingUid() // dummy
+}
+
+type signAuthority interface {
+	signAuthority() // dummy
+}
+
+type cmdMethod interface {
+	cmdMethod() //dummy
+}
+
+type OpalUID [8]byte
+type OpalMethod [8]byte
+
+func (Buf) invokingUid()        {}
+func (OpalUID) invokingUid()    {}
+func (OpalMethod) invokingUid() {}
+
+func (Buf) signAuthority()     {}
+func (OpalUID) signAuthority() {}
+
+func (Buf) cmdMethod()        {}
+func (OpalMethod) cmdMethod() {}
 
 var (
 	SMUID_UID                  OpalUID = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff}
@@ -361,12 +385,12 @@ type OpalToken int
 
 const (
 	// Boolean
-	OPAL_TRUE         OpalToken = 0x01
-	OPAL_FALSE        OpalToken = 0x00
-	OPAL_BOOLEAN_EXPR OpalToken = 0x03
+	TRUE         OpalToken = 0x01
+	FALSE        OpalToken = 0x00
+	BOOLEAN_EXPR OpalToken = 0x03
 
 	/**
-	 * Opal: Cell Blocks
+	 * Cell Blocks
 	 */
 	TABLE       OpalToken = 0x00
 	STARTROW    OpalToken = 0x01
@@ -376,7 +400,7 @@ const (
 	VALUES      OpalToken = 0x01
 
 	/*
-	 * Opal: Credential Table Group
+	 * Credential Table Group
 	 *
 	 * Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Architecture_Core_Spec_v2.01_r1.00.pdf
 	 * Table 181. C_PIN Table Description
@@ -391,7 +415,7 @@ const (
 	CREDENTIAL_PERSISTENCE OpalToken = 0x07
 
 	/*
-	 * Opal: Locking Table
+	 * Locking Table
 	 *
 	 * Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Architecture_Core_Spec_v2.01_r1.00.pdf
 	 * Table 226. Locking Table Description
@@ -411,7 +435,7 @@ const (
 	LOCKING_GENERAL_STATUS     OpalToken = 0x13
 
 	/*
-	 * Opal: LockingInfo Table
+	 * LockingInfo Table
 	 *
 	 * Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Architecture_Core_Spec_v2.01_r1.00.pdf
 	 * Table 225. LockingInfo Table Description
@@ -487,25 +511,36 @@ const (
 	ARCHIVEUNLOCKED OpalLockingState = 0x05
 )
 
-type OpalStatusCode int
+type MethodStatus int
 
 const (
-	SUCCESS               OpalStatusCode = 0x00
-	NOT_AUTHORIZED        OpalStatusCode = 0x01
-	SP_BUSY               OpalStatusCode = 0x03
-	SP_FAILED             OpalStatusCode = 0x04
-	SP_DISABLED           OpalStatusCode = 0x05
-	SP_FROZEN             OpalStatusCode = 0x06
-	NO_SESSIONS_AVAILABLE OpalStatusCode = 0x07
-	UNIQUENESS_CONFLICT   OpalStatusCode = 0x08
-	INSUFFICIENT_SPACE    OpalStatusCode = 0x09
-	INSUFFICIENT_ROWS     OpalStatusCode = 0x0A
-	INVALID_FUNCTION      OpalStatusCode = 0x0B // defined in early specs, still used in some firmware
-	INVALID_PARAMETER     OpalStatusCode = 0x0C
-	INVALID_REFERENCE     OpalStatusCode = 0x0D
-	TPER_MALFUNCTION      OpalStatusCode = 0x0F
-	TRANSACTION_FAILURE   OpalStatusCode = 0x10
-	RESPONSE_OVERFLOW     OpalStatusCode = 0x11
-	AUTHORITY_LOCKED_OUT  OpalStatusCode = 0x12
-	FAIL                  OpalStatusCode = 0x3F
+	SUCCESS               MethodStatus = 0x00
+	NOT_AUTHORIZED        MethodStatus = 0x01
+	SP_BUSY               MethodStatus = 0x03
+	SP_FAILED             MethodStatus = 0x04
+	SP_DISABLED           MethodStatus = 0x05
+	SP_FROZEN             MethodStatus = 0x06
+	NO_SESSIONS_AVAILABLE MethodStatus = 0x07
+	UNIQUENESS_CONFLICT   MethodStatus = 0x08
+	INSUFFICIENT_SPACE    MethodStatus = 0x09
+	INSUFFICIENT_ROWS     MethodStatus = 0x0A
+	INVALID_FUNCTION      MethodStatus = 0x0B // defined in early specs, still used in some firmware
+	INVALID_PARAMETER     MethodStatus = 0x0C
+	INVALID_REFERENCE     MethodStatus = 0x0D // OBSOLETE
+	TPER_MALFUNCTION      MethodStatus = 0x0F
+	TRANSACTION_FAILURE   MethodStatus = 0x10
+	RESPONSE_OVERFLOW     MethodStatus = 0x11
+	AUTHORITY_LOCKED_OUT  MethodStatus = 0x12
+	FAIL                  MethodStatus = 0x3F
 )
+
+type token interface {
+	token() // dummy
+}
+
+func (OpalToken) token()        {}
+func (OpalTinyAtom) token()     {}
+func (OpalShortAtom) token()    {}
+func (OpalLockingState) token() {}
+func (OpalUID) token()          {}
+func (OpalMethod) token()       {}
