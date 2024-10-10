@@ -12,7 +12,7 @@ func (p *TcgTokenVO) Buffer() []uint8 {
 	return p.buf
 }
 
-func (p *TcgTokenVO) Type() OpalToken {
+func (p *TcgTokenVO) Type() Token {
 	typeVal := p.buf[0]
 	switch {
 	case typeVal & 0x80 == 0:
@@ -50,7 +50,7 @@ func (p *TcgTokenVO) Type() OpalToken {
 			return DTA_TOKENID_UINT
 		}
 	default:
-		return OpalToken(typeVal)
+		return Token(typeVal)
 	}
 }
 

@@ -14,12 +14,12 @@ var (
 
 type TcgCommand struct {
 	CmdBuf *internal.AlignedBuffer
-	Header *OpalHeader
+	Header *TcgHeader
 	CmdPtr *uint8
 }
 
 type InvokingUid interface {
-	[]uint8 | OpalUID
+	[]uint8 | UID
 }
 
 func NewTcgCommand() *TcgCommand {
@@ -27,36 +27,43 @@ func NewTcgCommand() *TcgCommand {
 		CmdBuf: internal.NewAlignedBuffer(IO_BUFFER_ALIGNMENT, MAX_BUFFER_LENGTH),
 	}
 	newCmd.CmdPtr = newCmd.CmdBuf.GetPointer()
-	newCmd.Header = (*OpalHeader)(unsafe.Pointer(newCmd.CmdPtr))
+	newCmd.Header = (*TcgHeader)(unsafe.Pointer(newCmd.CmdPtr))
 
 	return newCmd
 }
 
 func (cmd *TcgCommand) addByteToken(data uint8) error {
-	_, err := cmd.CmdBuf.Write([]byte{data})
-	return err
+	return cmd.CmdBuf.WriteByte(data)
 }
 
 func (cmd *TcgCommand) Reset() {
-	cmd.CmdBuf.ResetWrite()
+	cmd.CmdBuf.Reset()
+	cmd.CmdBuf.SetWritePos(int(unsafe.Sizeof(*cmd.Header)))
 }
 
-// invokingUid: OpalUID | Buf([]byte)
-func (cmd *TcgCommand) Init(invokingUid invokingUID, method OpalMethod) error {
+// invokingUid: OpalUID | Buf([]byte), method: OpalMethod | Buf([]byte)
+func (cmd *TcgCommand) Init(invokingUid invokingUID, method cmdMethod) error {
 	cmd.Reset()
-	if _, err := cmd.CmdBuf.Write([]byte{byte(CALL)}); err != nil {
+	if err := cmd.addByteToken(uint8(CALL)); err != nil {
 		return err
 	}
 
 	switch uid := invokingUid.(type) {
-	case OpalUID:
+	case UID:
 		cmd.AddToken(uid)
 	case Buf:
 		cmd.AddRawToken(uid)
 	default:
 		return ErrInvalidParamType
 	}
-	cmd.AddToken(method)
+	
+	switch m := method.(type) {
+	case Method:
+		cmd.CmdBuf.WriteByte(byte(BYTESTRING8))
+		cmd.CmdBuf.Write(m[:])
+	case Buf:
+		cmd.AddRawToken(m)
+	}
 
 	return nil
 }
@@ -70,17 +77,21 @@ func (cmd *TcgCommand) AddRawToken(data []uint8) error {
 // token: OpalUID | OpalMethod | OpalToken | OpalTinyAtom | OpalShortAtom | OpalLockingState
 func (cmd *TcgCommand) AddToken(token token) error {
 	switch v := token.(type) {
-	case OpalUID:
+	case UID:
+		if err := cmd.addByteToken(uint8(BYTESTRING8)); err == nil {
+			return cmd.AddRawToken(v[:])
+		} else {
+			return err
+		}
+	case Method:
 		return cmd.AddStringToken(string(v[:]), len(v))
-	case OpalMethod:
-		return cmd.AddStringToken(string(v[:]), len(v))
-	case OpalToken:
+	case Token:
 		return cmd.addByteToken(uint8(v))
-	case OpalTinyAtom:
+	case TinyAtom:
 		return cmd.addByteToken(uint8(v))
-	case OpalShortAtom:
+	case ShortAtom:
 		return cmd.addByteToken(uint8(v))
-	case OpalLockingState:
+	case LockingState:
 		return cmd.addByteToken(uint8(v))
 	default:
 		return ErrInvalidParamType
@@ -178,7 +189,7 @@ func (cmd *TcgCommand) Complete(eod ...bool) error {
 	}
 
 	cmd.CmdBuf.ResetRead()
-	header := &OpalHeader{}
+	header := &TcgHeader{}
 	if err := struc.Unpack(cmd.CmdBuf, header); err != nil {
 		return err
 	}

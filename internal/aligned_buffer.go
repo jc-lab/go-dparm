@@ -84,6 +84,14 @@ func (b *AlignedBuffer) ResetRead() {
 	b.readerPos = 0
 }
 
+func (b *AlignedBuffer) SetWritePos(offset int) {
+	b.writerPos = offset
+}
+
+func (b *AlignedBuffer) SetReadPos(offset int) {
+	b.readerPos = offset
+}
+
 func (b *AlignedBuffer) WriteByte(p byte) (err error) {
 	if b.writerPos >= b.limit {
 		return io.EOF

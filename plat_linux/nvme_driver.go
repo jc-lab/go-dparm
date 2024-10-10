@@ -11,7 +11,6 @@ import (
 
 	"github.com/jc-lab/go-dparm/common"
 	common_nvme "github.com/jc-lab/go-dparm/common/nvme"
-	"github.com/jc-lab/go-dparm/internal"
 	"github.com/jc-lab/go-dparm/nvme"
 )
 
@@ -165,13 +164,5 @@ func (s *LinuxNvmeDriverHandle) NvmeGetLogPage(nsid uint32, logId uint32, rae bo
 }
 
 func (s *LinuxNvmeDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
-	cmd := &nvme.NvmeAdminCmd{
-		Opcode: uint8(internal.Ternary(rw, nvme.NVME_ADMIN_OP_SECURITY_SEND, nvme.NVME_ADMIN_OP_SECURITY_RECV)),
-		DataAddr: uintptr(unsafe.Pointer(&buffer[0])),
-		DataLen: uint32(len(buffer)),
-		Cdw10: (uint32(protocol) & 0xff) << 24 | (uint32(comId) & 0xffff) << 8,
-		Cdw11: uint32(len(buffer)),
-	}
-
-	return s.DoNvmeAdminPassthru(cmd)
+	return fmt.Errorf("not supported")
 }

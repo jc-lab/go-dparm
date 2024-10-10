@@ -12,7 +12,6 @@ import (
 const trimSet = " \t\r\n\x00"
 
 type DriveHandleImpl struct {
-	DriveHandle
 	Dh   DriverHandle
 	Info DriveInfo
 }
@@ -121,7 +120,7 @@ func (p *DriveHandleImpl) NvmeGetLogPage(nsid uint32, logId uint32, rae bool, si
 
 func (p *DriveHandleImpl) SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error {
 	if p.Dh == nil {
-		return errors.New("Not supported")
+		return errors.New("not supported")
 	}
 
 	err := p.Dh.SecurityCommand(rw, dma, protocol, comId, buffer, timeoutSecs)

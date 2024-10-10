@@ -43,8 +43,8 @@ type TcgDevice interface {
 }
 
 type TcgDeviceImpl struct {
-	TcgDevice
-	dh common.DriveHandle
+	dev TcgDevice
+	dh  common.DriveHandle
 }
 
 func NewTcgDevice(driveHandle common.DriveHandle) (TcgDevice, error) {
@@ -54,9 +54,36 @@ func NewTcgDevice(driveHandle common.DriveHandle) (TcgDevice, error) {
 		return nil, err
 	}
 
-	return &TcgDeviceImpl{
+	base := TcgDeviceImpl{
 		dh: tcgDriveHandle,
-	}, nil
+	}
+	base.dev = &base
+
+	switch {
+	case tcgDriveHandle.TcgOpalSscV100:
+		device := &TcgDeviceOpal1{
+			base,
+		}
+		device.dev = device
+
+		return device, nil
+	case tcgDriveHandle.TcgOpalSscV200:
+		device := &TcgDeviceOpal2{
+			base,
+		}
+		device.dev = device
+
+		return device, nil
+	case tcgDriveHandle.TcgEnterprise:
+		device := &TcgDeviceEnterprise{
+			base,
+		}
+		device.dev = device
+
+		return device, nil
+	}
+
+	return &base, nil
 }
 
 func (p *TcgDeviceImpl) GetDriveHandle() common.DriveHandle {
@@ -87,7 +114,7 @@ func (p *TcgDeviceImpl) IsLockingEnabled() bool {
 
 	feature := (*Discovery0LockingFeature)(unsafe.Pointer(&data[0]))
 
-	return (feature.B04 >> 1) & 0x01 != 0
+	return (feature.B04>>1)&0x01 != 0
 }
 
 func (p *TcgDeviceImpl) IsLocked() bool {
@@ -102,7 +129,7 @@ func (p *TcgDeviceImpl) IsLocked() bool {
 
 	feature := (*Discovery0LockingFeature)(unsafe.Pointer(&data[0]))
 
-	return (feature.B04 >> 2) & 0x01 != 0
+	return (feature.B04>>2)&0x01 != 0
 }
 
 func (p *TcgDeviceImpl) IsMBREnabled() bool {
@@ -117,7 +144,7 @@ func (p *TcgDeviceImpl) IsMBREnabled() bool {
 
 	feature := (*Discovery0LockingFeature)(unsafe.Pointer(&data[0]))
 
-	return (feature.B04 >> 4) & 0x01 != 0
+	return (feature.B04>>4)&0x01 != 0
 }
 
 func (p *TcgDeviceImpl) IsMBRDone() bool {
@@ -132,7 +159,7 @@ func (p *TcgDeviceImpl) IsMBRDone() bool {
 
 	feature := (*Discovery0LockingFeature)(unsafe.Pointer(&data[0]))
 
-	return (feature.B04 >> 5) & 0x01 != 0
+	return (feature.B04>>5)&0x01 != 0
 }
 
 func (p *TcgDeviceImpl) IsMediaEncryption() bool {
@@ -147,39 +174,35 @@ func (p *TcgDeviceImpl) IsMediaEncryption() bool {
 
 	feature := (*Discovery0LockingFeature)(unsafe.Pointer(&data[0]))
 
-	return (feature.B04 >> 3) & 0x01 != 0
+	return (feature.B04>>3)&0x01 != 0
 }
 
 func (p *TcgDeviceImpl) Exec(cmd *TcgCommand, protocol uint8) (*TcgResponse, error) {
 	timeout := 10000 * time.Millisecond
 	beginAt := time.Now()
 
-	if !p.IsAnySSC() {
+	if !p.dev.IsAnySSC() {
 		return nil, fmt.Errorf("not supported")
 	}
 
-	if err := p.dh.SecurityCommand(true, false, protocol, p.TcgDevice.GetBaseComId(), unsafe.Slice((*byte)(unsafe.Pointer(cmd.GetCmdPtr())), cmd.GetCmdSize()), 5); err != nil {
+	if err := p.dh.SecurityCommand(true, false, protocol, p.dev.GetBaseComId(), unsafe.Slice((*byte)(unsafe.Pointer(cmd.GetCmdPtr())), cmd.GetCmdSize()), 5); err != nil {
 		return nil, err
 	}
 
 	resp := NewTcgResponse()
-	for resp.header.Cp.Outstanding == 0 || resp.header.Cp.MinTransfer != 0 {
+	for first := true; first || (resp.header.Cp.Outstanding != 0 && resp.header.Cp.MinTransfer == 0); {
 		spentTime := time.Since(beginAt)
 		time.Sleep(25 * time.Millisecond)
 		resp.Reset()
+		first = false
 
-		if err := p.dh.SecurityCommand(false, false, protocol, p.TcgDevice.GetBaseComId(), unsafe.Slice((*byte)(unsafe.Pointer(resp.GetRespBuf())), resp.GetRespBufSize()), 5); err != nil {
+		if err := p.dh.SecurityCommand(false, false, protocol, p.dev.GetBaseComId(), unsafe.Slice((*byte)(unsafe.Pointer(resp.GetRespBuf())), resp.GetRespBufSize()), 5); err != nil {
 			return resp, err
 		}
 
 		if spentTime > timeout {
-			// TIMEOUT!
-			break;
+			return resp, fmt.Errorf("timeout")
 		}
-	}
-
-	if resp.header.Cp.Outstanding != 0 && resp.header.Cp.MinTransfer == 0 {
-		return resp, fmt.Errorf("timeout")
 	}
 
 	if err := resp.Commit(); err != nil {
@@ -187,4 +210,24 @@ func (p *TcgDeviceImpl) Exec(cmd *TcgCommand, protocol uint8) (*TcgResponse, err
 	}
 
 	return resp, nil
+}
+
+func (p *TcgDeviceImpl) GetBaseComId() uint16 {
+	return 0
+}
+
+func (p *TcgDeviceImpl) GetNumComIds() uint16 {
+	return 0
+}
+
+func (p *TcgDeviceImpl) GetDefaultPassword() (string, error) {
+	return "", fmt.Errorf("not supported")
+}
+
+func (p *TcgDeviceImpl) OpalGetTable(session *TcgSession, table []uint8, startCol uint16, endCol uint16) (*TcgResponse, error) {
+	return nil, fmt.Errorf("not supported")
+}
+
+func (p *TcgDeviceImpl) RevertTPer(password string, isPsid bool, isAdminSp bool) error {
+	return fmt.Errorf("not supported")
 }

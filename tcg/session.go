@@ -1,7 +1,7 @@
 package tcg
 
 import (
-	"crypto/rand"
+	// "crypto/rand"
 	"encoding/binary"
 	"fmt"
 	"unsafe"
@@ -10,7 +10,7 @@ import (
 )
 
 type TcgSession struct {
-	tcgDevice TcgDevice
+	tcgDevice     TcgDevice
 	sessionOpened bool
 
 	hostSessionNum, tperSessionNum uint64
@@ -24,7 +24,7 @@ func NewTcgSession(tcgDevice TcgDevice) *TcgSession {
 	return &TcgSession{
 		tcgDevice: tcgDevice,
 		autoClose: true,
-		timeout: 60000,
+		timeout:   60000,
 	}
 }
 
@@ -57,36 +57,36 @@ func (p *TcgSession) SetTimeout(timeoutMs uint32) {
 }
 
 // signAuthority: Buf([]uint8) | OpalUID
-func (p *TcgSession) Start(sp OpalUID, hostChallenge string, signAuthority signAuthority) error {
+func (p *TcgSession) Start(sp UID, hostChallenge string, signAuthority signAuthority) error {
 	var buf []uint8
 
 	switch v := signAuthority.(type) {
-	case OpalUID:
-		buf = v[:]
-		buf = append(buf, uint8(BYTESTRING8))
+	case UID:
+		buf = append([]uint8{uint8(BYTESTRING8)}, v[:]...)
 	case Buf:
 		buf = v
 	}
 
-	cmd := NewTcgCommand()
-
 	isEnterprise := p.tcgDevice.GetDeviceType() == OpalEnterpriseDevice
 
-	var hostSessionId uint64
-	rand.Read(unsafe.Slice((*byte)(unsafe.Pointer(&hostSessionId)), 8))
+	// var hostSessionId uint64
+	// rand.Read(unsafe.Slice((*byte)(unsafe.Pointer(&hostSessionId)), 8))
 
+	cmd := NewTcgCommand()
 	cmd.Init(SMUID_UID, STARTSESSION)
 	cmd.AddToken(STARTLIST)
-	cmd.AddNumberToken(hostSessionId)
+	// cmd.AddNumberToken(hostSessionId)
+	cmd.AddNumberToken(105)
 	cmd.AddToken(sp)
-	if hostChallenge != "" && isEnterprise {
+	cmd.AddToken(UINT_01)
+	if hostChallenge != "" && !isEnterprise {
 		cmd.AddToken(STARTNAME)
 		cmd.AddToken(UINT_00)
 		if !p.noHashPassword {
 			hashed := TcgHashPassword(p.tcgDevice, false, hostChallenge)
-			cmd.AddStringToken(string(hashed), len(hashed))
+			cmd.AddStringToken(string(hashed))
 		} else {
-			cmd.AddStringToken(hostChallenge, len(hostChallenge))
+			cmd.AddStringToken(hostChallenge)
 		}
 		cmd.AddToken(ENDNAME)
 
@@ -99,7 +99,7 @@ func (p *TcgSession) Start(sp OpalUID, hostChallenge string, signAuthority signA
 	if isEnterprise {
 		text := "SessionTimeout"
 		cmd.AddToken(STARTNAME)
-		cmd.AddStringToken(text, len(text))
+		cmd.AddStringToken(text)
 		cmd.AddNumberToken(uint64(p.timeout))
 		cmd.AddToken(ENDNAME)
 	}
@@ -119,6 +119,12 @@ func (p *TcgSession) Start(sp OpalUID, hostChallenge string, signAuthority signA
 	}
 
 	temp, err := hsnToken.GetUint32()
+	if err != nil {
+		return err
+	}
+	p.hostSessionNum = uint64(binary.BigEndian.Uint32(unsafe.Slice((*byte)(unsafe.Pointer(&temp)), 4)))
+
+	temp, err = tsnToken.GetUint32()
 	if err != nil {
 		return err
 	}
@@ -185,13 +191,14 @@ func (p *TcgSession) SendCommand(cmd *TcgCommand) (*TcgResponse, error) {
 	cmd.SetHSN(uint32(p.hostSessionNum))
 	cmd.SetTSN(uint32(p.tperSessionNum))
 	cmd.SetComId(p.tcgDevice.GetBaseComId())
+
 	resp, err := p.tcgDevice.Exec(cmd, 0x01)
 	if err != nil {
 		return nil, err
 	}
 
-	respHeader := (*OpalHeader)(unsafe.Pointer(resp.GetRespBuf()))
-	if respHeader.Cp.Length == 0  || respHeader.Pkt.Length == 0 || respHeader.Subpkt.Length == 0 {
+	respHeader := (*TcgHeader)(unsafe.Pointer(resp.GetRespBuf()))
+	if respHeader.Cp.Length == 0 || respHeader.Pkt.Length == 0 || respHeader.Subpkt.Length == 0 {
 		// payload is not received
 		return resp, ErrIllegalResponse
 	}
@@ -210,7 +217,7 @@ func (p *TcgSession) SendCommand(cmd *TcgCommand) (*TcgResponse, error) {
 		return resp, ErrIllegalResponse
 	}
 
-	if tokenA.Type() != ENDLIST && tokenB.Type() == STARTLIST {
+	if tokenA.Type() != ENDLIST || tokenB.Type() != STARTLIST {
 		// no method status
 		return resp, ErrIllegalResponse
 	}
@@ -222,7 +229,9 @@ func (p *TcgSession) SendCommand(cmd *TcgCommand) (*TcgResponse, error) {
 	}
 
 	if methodStatus != uint8(SUCCESS) {
-		return resp, fmt.Errorf("tcg error")
+		return resp, &TcgError{
+			Status: MethodStatus(methodStatus),
+		}
 	}
 
 	return resp, nil

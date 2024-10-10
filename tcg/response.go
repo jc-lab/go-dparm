@@ -15,7 +15,7 @@ var (
 
 type TcgResponse struct {
 	buf    *internal.AlignedBuffer
-	header *OpalHeader
+	header *TcgHeader
 	ptr    *uint8
 	tokens []*TcgTokenVO
 }
@@ -25,7 +25,7 @@ func NewTcgResponse() *TcgResponse {
 		buf: internal.NewAlignedBuffer(IO_BUFFER_ALIGNMENT, MIN_BUFFER_LENGTH),
 	}
 	newResp.ptr = newResp.buf.GetPointer()
-	newResp.header = (*OpalHeader)(unsafe.Pointer(newResp.ptr))
+	newResp.header = (*TcgHeader)(unsafe.Pointer(newResp.ptr))
 
 	return newResp
 }
@@ -46,7 +46,7 @@ func (p *TcgResponse) Commit() error {
 	var respTokens []*TcgTokenVO
 
 	subpktLen := binary.BigEndian.Uint32(unsafe.Slice((*byte)(unsafe.Pointer(&p.header.Subpkt.Length)), 4))
-	cur := (*uint8)(unsafe.Add(unsafe.Pointer(p.header), unsafe.Sizeof(*p.header)))
+	cur := (*uint8)(unsafe.Add(unsafe.Pointer(p.ptr), unsafe.Sizeof(*p.header)))
 	end := (*uint8)(unsafe.Add(unsafe.Pointer(cur), subpktLen))
 
 	var curTokenLen uint32
@@ -66,15 +66,14 @@ func (p *TcgResponse) Commit() error {
 			curTokenLen = uint32(*cur & 0x0f) + 1
 		case *cur & 0x20 == 0:
 			// medium atom
-			curTokenLen = ((uint32(*cur) & 0x07) << 8) | (uint32(*(*uint8)(unsafe.Add(unsafe.Pointer(cur), 1))) + 2)
-		case *cur * 0x10 == 0:
+			curTokenLen = (((uint32(*cur) & 0x07) << 8) | (uint32(*(*uint8)(unsafe.Add(unsafe.Pointer(cur), 1))))) + 2
+		case *cur & 0x10 == 0:
 			// long atom
-			curTokenLen = (uint32(*(*uint8)(unsafe.Add(unsafe.Pointer(cur), 1))) << 16) | (uint32((*(*uint8)(unsafe.Add(unsafe.Pointer(cur), 2)))) << 8) | (uint32(*(*uint8)(unsafe.Add(unsafe.Pointer(cur), 3))) + 4)
+			curTokenLen = ((uint32(*(*uint8)(unsafe.Add(unsafe.Pointer(cur), 1))) << 16) | (uint32((*(*uint8)(unsafe.Add(unsafe.Pointer(cur), 2)))) << 8) | uint32(*(*uint8)(unsafe.Add(unsafe.Pointer(cur), 3)))) + 4
 		default:
 			// token
 			curTokenLen = 1
 		}
-
 
 		tempTokenBuf = unsafe.Slice(cur, curTokenLen)
 		cur = (*uint8)(unsafe.Add(unsafe.Pointer(cur), curTokenLen))

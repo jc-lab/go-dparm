@@ -34,7 +34,7 @@ func (p *TcgDriveHandle) TcgDiscovery0() error {
 	alignedBuffer := internal.NewAlignedBuffer(IO_BUFFER_ALIGNMENT, MIN_BUFFER_LENGTH)
 
 	if err := p.SecurityCommand(false, false, 0x01, 0x0001, alignedBuffer.GetBuffer(), 3); err != nil {
-		if err.Error() == "Not supported" {
+		if err.Error() == "not supported" {
 			p.TcgSupport = -1
 		} else {
 			p.TcgSupport = 0
