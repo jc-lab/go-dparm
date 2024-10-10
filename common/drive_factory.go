@@ -24,6 +24,7 @@ type DriveHandle interface {
 	SecurityCommand(rw bool, dma bool, protocol uint8, comId uint16, buffer []byte, timeoutSecs int) error
 
 	// TCG
+	TcgDiscovery0() error
 	GetTcgLevel0InfoAndSerial() (tcg.TcgLevel0Info, string)
 }
 
