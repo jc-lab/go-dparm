@@ -4,9 +4,6 @@ import (
 	"encoding/binary"
 
 	"unsafe"
-
-	"fmt" // TEST
-	"encoding/hex" // TEST
 )
 
 type TcgDeviceOpal1 struct {
@@ -123,8 +120,6 @@ func revertTPer(device TcgDevice, password string, isPsid bool) error {
 	cmd.AddToken(STARTLIST)
 	cmd.AddToken(ENDLIST)
 	cmd.Complete()
-
-	fmt.Printf("%s\n", hex.Dump(unsafe.Slice((*byte)(unsafe.Pointer(cmd.GetCmdPtr())), cmd.CmdBuf.GetPos()))) // TEST
 
 	_, err := sess.SendCommand(cmd)
 	if err == nil {
