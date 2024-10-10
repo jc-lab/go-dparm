@@ -15,7 +15,7 @@ var (
 
 type TcgResponse struct {
 	buf    *internal.AlignedBuffer
-	header *TcgHeader
+	header *OpalHeader
 	ptr    *uint8
 	tokens []*TcgTokenVO
 }
@@ -25,7 +25,7 @@ func NewTcgResponse() *TcgResponse {
 		buf: internal.NewAlignedBuffer(IO_BUFFER_ALIGNMENT, MIN_BUFFER_LENGTH),
 	}
 	newResp.ptr = newResp.buf.GetPointer()
-	newResp.header = (*TcgHeader)(unsafe.Pointer(newResp.ptr))
+	newResp.header = (*OpalHeader)(unsafe.Pointer(newResp.ptr))
 
 	return newResp
 }

@@ -14,12 +14,12 @@ var (
 
 type TcgCommand struct {
 	CmdBuf *internal.AlignedBuffer
-	Header *TcgHeader
+	Header *OpalHeader
 	CmdPtr *uint8
 }
 
 type InvokingUid interface {
-	[]uint8 | UID
+	[]uint8 | OpalUID
 }
 
 func NewTcgCommand() *TcgCommand {
@@ -27,7 +27,7 @@ func NewTcgCommand() *TcgCommand {
 		CmdBuf: internal.NewAlignedBuffer(IO_BUFFER_ALIGNMENT, MAX_BUFFER_LENGTH),
 	}
 	newCmd.CmdPtr = newCmd.CmdBuf.GetPointer()
-	newCmd.Header = (*TcgHeader)(unsafe.Pointer(newCmd.CmdPtr))
+	newCmd.Header = (*OpalHeader)(unsafe.Pointer(newCmd.CmdPtr))
 
 	return newCmd
 }
@@ -49,7 +49,7 @@ func (cmd *TcgCommand) Init(invokingUid invokingUID, method cmdMethod) error {
 	}
 
 	switch uid := invokingUid.(type) {
-	case UID:
+	case OpalUID:
 		cmd.AddToken(uid)
 	case Buf:
 		cmd.AddRawToken(uid)
@@ -58,7 +58,7 @@ func (cmd *TcgCommand) Init(invokingUid invokingUID, method cmdMethod) error {
 	}
 	
 	switch m := method.(type) {
-	case Method:
+	case OpalMethod:
 		cmd.CmdBuf.WriteByte(byte(BYTESTRING8))
 		cmd.CmdBuf.Write(m[:])
 	case Buf:
@@ -77,21 +77,21 @@ func (cmd *TcgCommand) AddRawToken(data []uint8) error {
 // token: OpalUID | OpalMethod | OpalToken | OpalTinyAtom | OpalShortAtom | OpalLockingState
 func (cmd *TcgCommand) AddToken(token token) error {
 	switch v := token.(type) {
-	case UID:
+	case OpalUID:
 		if err := cmd.addByteToken(uint8(BYTESTRING8)); err == nil {
 			return cmd.AddRawToken(v[:])
 		} else {
 			return err
 		}
-	case Method:
+	case OpalMethod:
 		return cmd.AddStringToken(string(v[:]), len(v))
-	case Token:
+	case OpalToken:
 		return cmd.addByteToken(uint8(v))
-	case TinyAtom:
+	case OpalTinyAtom:
 		return cmd.addByteToken(uint8(v))
-	case ShortAtom:
+	case OpalShortAtom:
 		return cmd.addByteToken(uint8(v))
-	case LockingState:
+	case OpalLockingState:
 		return cmd.addByteToken(uint8(v))
 	default:
 		return ErrInvalidParamType
@@ -189,7 +189,7 @@ func (cmd *TcgCommand) Complete(eod ...bool) error {
 	}
 
 	cmd.CmdBuf.ResetRead()
-	header := &TcgHeader{}
+	header := &OpalHeader{}
 	if err := struc.Unpack(cmd.CmdBuf, header); err != nil {
 		return err
 	}

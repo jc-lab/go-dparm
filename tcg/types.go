@@ -262,8 +262,8 @@ func (u *Discovery0FeatureUnion) ToDataStoreTable() (*Discovery0DataStoreTableFe
 	return result, nil
 }
 
-// ComPacket is Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Opal_SSC_Application_Note_1-00_1-00-Final.pdf
-type ComPacket struct {
+// OpalComPacket is Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Opal_SSC_Application_Note_1-00_1-00-Final.pdf
+type OpalComPacket struct {
 	Reserved0     uint32 `struc:"uint32,big"`
 	ExtendedComID [4]byte
 	Outstanding   uint32 `struc:"uint32,big"`
@@ -271,7 +271,7 @@ type ComPacket struct {
 	Length        uint32 `struc:"uint32,big"`
 }
 
-type Packet struct {
+type OpalPacket struct {
 	Tsn        uint32 `struc:"uint32,big"`
 	Hsn        uint32 `struc:"uint32,big"`
 	SeqNumber  uint32 `struc:"uint32,big"`
@@ -281,16 +281,16 @@ type Packet struct {
 	Length     uint32 `struc:"uint32,big"`
 }
 
-type DataSubPacket struct {
+type OpalDataSubPacket struct {
 	Reserved00 [6]byte `struc:"[6]byte,big"`
 	Kind       uint16  `struc:"uint16,big"`
 	Length     uint32  `struc:"uint32,big"`
 }
 
-type TcgHeader struct {
-	Cp     ComPacket
-	Pkt    Packet
-	Subpkt DataSubPacket
+type OpalHeader struct {
+	Cp     OpalComPacket
+	Pkt    OpalPacket
+	Subpkt OpalDataSubPacket
 }
 
 type Buf []byte
@@ -307,97 +307,97 @@ type cmdMethod interface {
 	cmdMethod() //dummy
 }
 
-type UID [8]byte
-type Method [8]byte
+type OpalUID [8]byte
+type OpalMethod [8]byte
 
-func (Buf) invokingUid()    {}
-func (UID) invokingUid()    {}
-func (Method) invokingUid() {}
+func (Buf) invokingUid()        {}
+func (OpalUID) invokingUid()    {}
+func (OpalMethod) invokingUid() {}
 
-func (Buf) signAuthority() {}
-func (UID) signAuthority() {}
+func (Buf) signAuthority()     {}
+func (OpalUID) signAuthority() {}
 
-func (Buf) cmdMethod()    {}
-func (Method) cmdMethod() {}
+func (Buf) cmdMethod()        {}
+func (OpalMethod) cmdMethod() {}
 
 var (
-	SMUID_UID                  UID = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff}
-	THISSP_UID                 UID = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}
-	ADMINSP_UID                UID = [8]byte{0x00, 0x00, 0x02, 0x05, 0x00, 0x00, 0x00, 0x01}
-	LOCKINGSP_UID              UID = [8]byte{0x00, 0x00, 0x02, 0x05, 0x00, 0x00, 0x00, 0x02}
-	ENTERPRISE_LOCKINGSP_UID   UID = [8]byte{0x00, 0x00, 0x02, 0x05, 0x00, 0x01, 0x00, 0x01}
-	ANYBODY_UID                UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x01}
-	SID_UID                    UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x06}
-	ADMIN1_UID                 UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x01, 0x00, 0x01}
-	USER1_UID                  UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x03, 0x00, 0x01}
-	USER2_UID                  UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x03, 0x00, 0x02}
-	PSID_UID                   UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x01, 0xff, 0x01}
-	ENTERPRISE_BANDMASTER0_UID UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x80, 0x01}
-	ENTERPRISE_ERASEMASTER_UID UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x84, 0x01}
+	SMUID_UID                  OpalUID = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff}
+	THISSP_UID                 OpalUID = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}
+	ADMINSP_UID                OpalUID = [8]byte{0x00, 0x00, 0x02, 0x05, 0x00, 0x00, 0x00, 0x01}
+	LOCKINGSP_UID              OpalUID = [8]byte{0x00, 0x00, 0x02, 0x05, 0x00, 0x00, 0x00, 0x02}
+	ENTERPRISE_LOCKINGSP_UID   OpalUID = [8]byte{0x00, 0x00, 0x02, 0x05, 0x00, 0x01, 0x00, 0x01}
+	ANYBODY_UID                OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x01}
+	SID_UID                    OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x06}
+	ADMIN1_UID                 OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x01, 0x00, 0x01}
+	USER1_UID                  OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x03, 0x00, 0x01}
+	USER2_UID                  OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x03, 0x00, 0x02}
+	PSID_UID                   OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x01, 0xff, 0x01}
+	ENTERPRISE_BANDMASTER0_UID OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x80, 0x01}
+	ENTERPRISE_ERASEMASTER_UID OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x84, 0x01}
 
 	/* tables */
-	LOCKINGRANGE_GLOBAL           UID = [8]byte{0x00, 0x00, 0x08, 0x02, 0x00, 0x00, 0x00, 0x01}
-	LOCKINGRANGE_ACE_RDLOCKED     UID = [8]byte{0x00, 0x00, 0x00, 0x08, 0x00, 0x03, 0xE0, 0x01}
-	LOCKINGRANGE_ACE_WRLOCKED     UID = [8]byte{0x00, 0x00, 0x00, 0x08, 0x00, 0x03, 0xE8, 0x01}
-	MBRCONTROL                    UID = [8]byte{0x00, 0x00, 0x08, 0x03, 0x00, 0x00, 0x00, 0x01}
-	MBR                           UID = [8]byte{0x00, 0x00, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00}
-	AUTHORITY_TABLE               UID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00}
-	C_PIN_TABLE                   UID = [8]byte{0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x00, 0x00}
-	LOCKING_INFO_TABLE            UID = [8]byte{0x00, 0x00, 0x08, 0x01, 0x00, 0x00, 0x00, 0x01}
-	ENTERPRISE_LOCKING_INFO_TABLE UID = [8]byte{0x00, 0x00, 0x08, 0x01, 0x00, 0x00, 0x00, 0x00}
+	LOCKINGRANGE_GLOBAL           OpalUID = [8]byte{0x00, 0x00, 0x08, 0x02, 0x00, 0x00, 0x00, 0x01}
+	LOCKINGRANGE_ACE_RDLOCKED     OpalUID = [8]byte{0x00, 0x00, 0x00, 0x08, 0x00, 0x03, 0xE0, 0x01}
+	LOCKINGRANGE_ACE_WRLOCKED     OpalUID = [8]byte{0x00, 0x00, 0x00, 0x08, 0x00, 0x03, 0xE8, 0x01}
+	MBRCONTROL                    OpalUID = [8]byte{0x00, 0x00, 0x08, 0x03, 0x00, 0x00, 0x00, 0x01}
+	MBR                           OpalUID = [8]byte{0x00, 0x00, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00}
+	AUTHORITY_TABLE               OpalUID = [8]byte{0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00}
+	C_PIN_TABLE                   OpalUID = [8]byte{0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x00, 0x00}
+	LOCKING_INFO_TABLE            OpalUID = [8]byte{0x00, 0x00, 0x08, 0x01, 0x00, 0x00, 0x00, 0x01}
+	ENTERPRISE_LOCKING_INFO_TABLE OpalUID = [8]byte{0x00, 0x00, 0x08, 0x01, 0x00, 0x00, 0x00, 0x00}
 
 	/* C_PIN_TABLE object ID's */
-	C_PIN_MSID   UID = [8]byte{0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x84, 0x02}
-	C_PIN_SID    UID = [8]byte{0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x00, 0x01}
-	C_PIN_ADMIN1 UID = [8]byte{0x00, 0x00, 0x00, 0x0B, 0x00, 0x01, 0x00, 0x01}
+	C_PIN_MSID   OpalUID = [8]byte{0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x84, 0x02}
+	C_PIN_SID    OpalUID = [8]byte{0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x00, 0x01}
+	C_PIN_ADMIN1 OpalUID = [8]byte{0x00, 0x00, 0x00, 0x0B, 0x00, 0x01, 0x00, 0x01}
 
 	/* half UID's (only first 4 bytes used) */
-	HALF_UID_AUTHORITY_OBJ_REF UID = [8]byte{0x00, 0x00, 0x0C, 0x05, 0xff, 0xff, 0xff, 0xff}
-	HALF_UID_BOOLEAN_ACE       UID = [8]byte{0x00, 0x00, 0x04, 0x0E, 0xff, 0xff, 0xff, 0xff}
+	HALF_UID_AUTHORITY_OBJ_REF OpalUID = [8]byte{0x00, 0x00, 0x0C, 0x05, 0xff, 0xff, 0xff, 0xff}
+	HALF_UID_BOOLEAN_ACE       OpalUID = [8]byte{0x00, 0x00, 0x04, 0x0E, 0xff, 0xff, 0xff, 0xff}
 
 	/* special value for omitted optional parameter */
-	UID_HEXFF UID = [8]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	UID_HEXFF OpalUID = [8]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 )
 
 var (
-	PROPERTIES    Method = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x01}
-	STARTSESSION  Method = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x02}
-	REVERT        Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x02, 0x02}
-	ACTIVATE      Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x02, 0x03}
-	EGET          Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x06}
-	ESET          Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x07}
-	NEXT          Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x08}
-	EAUTHENTICATE Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x0c}
-	GETACL        Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x0d}
-	GENKEY        Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x10}
-	REVERTSP      Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x11}
-	GET           Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x16}
-	SET           Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x17}
-	AUTHENTICATE  Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x1c}
-	RANDOM        Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x06, 0x01}
-	ERASE         Method = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x08, 0x03}
+	PROPERTIES    OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x01}
+	STARTSESSION  OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x02}
+	REVERT        OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x02, 0x02}
+	ACTIVATE      OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x02, 0x03}
+	EGET          OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x06}
+	ESET          OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x07}
+	NEXT          OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x08}
+	EAUTHENTICATE OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x0c}
+	GETACL        OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x0d}
+	GENKEY        OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x10}
+	REVERTSP      OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x11}
+	GET           OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x16}
+	SET           OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x17}
+	AUTHENTICATE  OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x1c}
+	RANDOM        OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x06, 0x01}
+	ERASE         OpalMethod = [8]byte{0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x08, 0x03}
 )
 
 /*
  * Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Opal_SSC_Application_Note_1-00_1-00-Final.pdf
  */
-type Token int
+type OpalToken int
 
 const (
 	// Boolean
-	TRUE         Token = 0x01
-	FALSE        Token = 0x00
-	BOOLEAN_EXPR Token = 0x03
+	TRUE         OpalToken = 0x01
+	FALSE        OpalToken = 0x00
+	BOOLEAN_EXPR OpalToken = 0x03
 
 	/**
 	 * Cell Blocks
 	 */
-	TABLE       Token = 0x00
-	STARTROW    Token = 0x01
-	ENDROW      Token = 0x02
-	STARTCOLUMN Token = 0x03
-	ENDCOLUMN   Token = 0x04
-	VALUES      Token = 0x01
+	TABLE       OpalToken = 0x00
+	STARTROW    OpalToken = 0x01
+	ENDROW      OpalToken = 0x02
+	STARTCOLUMN OpalToken = 0x03
+	ENDCOLUMN   OpalToken = 0x04
+	VALUES      OpalToken = 0x01
 
 	/*
 	 * Credential Table Group
@@ -405,14 +405,14 @@ const (
 	 * Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Architecture_Core_Spec_v2.01_r1.00.pdf
 	 * Table 181. C_PIN Table Description
 	 * */
-	CREDENTIAL_UID         Token = 0x00
-	CREDENTIAL_NAME        Token = 0x01
-	CREDENTIAL_COMMON_NAME Token = 0x02
-	CREDENTIAL_PIN         Token = 0x03
-	CREDENTIAL_CHAR_SET    Token = 0x04
-	CREDENTIAL_TRY_LIMIT   Token = 0x05
-	CREDENTIAL_TRIES       Token = 0x06
-	CREDENTIAL_PERSISTENCE Token = 0x07
+	CREDENTIAL_UID         OpalToken = 0x00
+	CREDENTIAL_NAME        OpalToken = 0x01
+	CREDENTIAL_COMMON_NAME OpalToken = 0x02
+	CREDENTIAL_PIN         OpalToken = 0x03
+	CREDENTIAL_CHAR_SET    OpalToken = 0x04
+	CREDENTIAL_TRY_LIMIT   OpalToken = 0x05
+	CREDENTIAL_TRIES       OpalToken = 0x06
+	CREDENTIAL_PERSISTENCE OpalToken = 0x07
 
 	/*
 	 * Locking Table
@@ -420,19 +420,19 @@ const (
 	 * Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Architecture_Core_Spec_v2.01_r1.00.pdf
 	 * Table 226. Locking Table Description
 	 * */
-	LOCKING_UID                Token = 0x00
-	LOCKING_NAME               Token = 0x01
-	LOCKING_COMMON_NAME        Token = 0x02
-	LOCKING_RANGE_START        Token = 0x03
-	LOCKING_RANGE_LENGTH       Token = 0x04
-	LOCKING_READ_LOCK_ENABLED  Token = 0x05
-	LOCKING_WRITE_LOCK_ENABLED Token = 0x06
-	LOCKING_READ_LOCKED        Token = 0x07
-	LOCKING_WRITE_LOCKED       Token = 0x08
-	LOCKING_LOCK_ON_RESET      Token = 0x09
-	LOCKING_ACTIVE_KEY         Token = 0x0A
-	LOCKING_NEXT_KEY           Token = 0x0B
-	LOCKING_GENERAL_STATUS     Token = 0x13
+	LOCKING_UID                OpalToken = 0x00
+	LOCKING_NAME               OpalToken = 0x01
+	LOCKING_COMMON_NAME        OpalToken = 0x02
+	LOCKING_RANGE_START        OpalToken = 0x03
+	LOCKING_RANGE_LENGTH       OpalToken = 0x04
+	LOCKING_READ_LOCK_ENABLED  OpalToken = 0x05
+	LOCKING_WRITE_LOCK_ENABLED OpalToken = 0x06
+	LOCKING_READ_LOCKED        OpalToken = 0x07
+	LOCKING_WRITE_LOCKED       OpalToken = 0x08
+	LOCKING_LOCK_ON_RESET      OpalToken = 0x09
+	LOCKING_ACTIVE_KEY         OpalToken = 0x0A
+	LOCKING_NEXT_KEY           OpalToken = 0x0B
+	LOCKING_GENERAL_STATUS     OpalToken = 0x13
 
 	/*
 	 * LockingInfo Table
@@ -440,75 +440,75 @@ const (
 	 * Reference: https://trustedcomputinggroup.org/wp-content/uploads/TCG_Storage_Architecture_Core_Spec_v2.01_r1.00.pdf
 	 * Table 225. LockingInfo Table Description
 	 * */
-	LOCKINGINFO_UID             Token = 0x00
-	LOCKINGINFO_NAME            Token = 0x01
-	LOCKINGINFO_COMMON_NAME     Token = 0x02
-	LOCKINGINFO_ENCRYPT_SUPPORT Token = 0x03
-	LOCKINGINFO_MAXRANGES       Token = 0x04
+	LOCKINGINFO_UID             OpalToken = 0x00
+	LOCKINGINFO_NAME            OpalToken = 0x01
+	LOCKINGINFO_COMMON_NAME     OpalToken = 0x02
+	LOCKINGINFO_ENCRYPT_SUPPORT OpalToken = 0x03
+	LOCKINGINFO_MAXRANGES       OpalToken = 0x04
 
 	/* mbr control */
-	MBRENABLE Token = 0x01
-	MBRDONE   Token = 0x02
+	MBRENABLE OpalToken = 0x01
+	MBRDONE   OpalToken = 0x02
 
 	/* properties */
-	HOSTPROPERTIES Token = 0x00
+	HOSTPROPERTIES OpalToken = 0x00
 
 	/* response tokenis() returned values */
-	DTA_TOKENID_BYTESTRING Token = 0xe0
-	DTA_TOKENID_SINT       Token = 0xe1
-	DTA_TOKENID_UINT       Token = 0xe2
-	DTA_TOKENID_TOKEN      Token = 0xe3 // actual token is returned
+	DTA_TOKENID_BYTESTRING OpalToken = 0xe0
+	DTA_TOKENID_SINT       OpalToken = 0xe1
+	DTA_TOKENID_UINT       OpalToken = 0xe2
+	DTA_TOKENID_TOKEN      OpalToken = 0xe3 // actual token is returned
 
-	STARTLIST       Token = 0xf0
-	ENDLIST         Token = 0xf1
-	STARTNAME       Token = 0xf2
-	ENDNAME         Token = 0xf3
-	CALL            Token = 0xf8
-	ENDOFDATA       Token = 0xf9
-	ENDOFSESSION    Token = 0xfa
-	STARTTRANSACTON Token = 0xfb
-	ENDTRANSACTON   Token = 0xfc
-	EMPTYATOM       Token = 0xff
-	WHERE           Token = 0x00
+	STARTLIST       OpalToken = 0xf0
+	ENDLIST         OpalToken = 0xf1
+	STARTNAME       OpalToken = 0xf2
+	ENDNAME         OpalToken = 0xf3
+	CALL            OpalToken = 0xf8
+	ENDOFDATA       OpalToken = 0xf9
+	ENDOFSESSION    OpalToken = 0xfa
+	STARTTRANSACTON OpalToken = 0xfb
+	ENDTRANSACTON   OpalToken = 0xfc
+	EMPTYATOM       OpalToken = 0xff
+	WHERE           OpalToken = 0x00
 )
 
-type TinyAtom int
+type OpalTinyAtom int
 
 const (
-	UINT_00 TinyAtom = 0x00
-	UINT_01 TinyAtom = 0x01
-	UINT_02 TinyAtom = 0x02
-	UINT_03 TinyAtom = 0x03
-	UINT_04 TinyAtom = 0x04
-	UINT_05 TinyAtom = 0x05
-	UINT_06 TinyAtom = 0x06
-	UINT_07 TinyAtom = 0x07
-	UINT_08 TinyAtom = 0x08
-	UINT_09 TinyAtom = 0x09
-	UINT_10 TinyAtom = 0x0a
-	UINT_11 TinyAtom = 0x0b
-	UINT_12 TinyAtom = 0x0c
-	UINT_13 TinyAtom = 0x0d
-	UINT_14 TinyAtom = 0x0e
-	UINT_15 TinyAtom = 0x0f
+	UINT_00 OpalTinyAtom = 0x00
+	UINT_01 OpalTinyAtom = 0x01
+	UINT_02 OpalTinyAtom = 0x02
+	UINT_03 OpalTinyAtom = 0x03
+	UINT_04 OpalTinyAtom = 0x04
+	UINT_05 OpalTinyAtom = 0x05
+	UINT_06 OpalTinyAtom = 0x06
+	UINT_07 OpalTinyAtom = 0x07
+	UINT_08 OpalTinyAtom = 0x08
+	UINT_09 OpalTinyAtom = 0x09
+	UINT_10 OpalTinyAtom = 0x0a
+	UINT_11 OpalTinyAtom = 0x0b
+	UINT_12 OpalTinyAtom = 0x0c
+	UINT_13 OpalTinyAtom = 0x0d
+	UINT_14 OpalTinyAtom = 0x0e
+	UINT_15 OpalTinyAtom = 0x0f
 )
 
-type ShortAtom int
+type OpalShortAtom int
 
 const (
-	UINT_3      ShortAtom = 0x83
-	BYTESTRING4 ShortAtom = 0xa4
-	BYTESTRING8 ShortAtom = 0xa8
+	UINT_3      OpalShortAtom = 0x83
+	BYTESTRING4 OpalShortAtom = 0xa4
+	BYTESTRING8 OpalShortAtom = 0xa8
 )
 
-type LockingState int
+type OpalLockingState int
 
 const (
-	READWRITE       LockingState = 0x01
-	READONLY        LockingState = 0x02
-	LOCKED          LockingState = 0x03
-	ARCHIVELOCKED   LockingState = 0x04
-	ARCHIVEUNLOCKED LockingState = 0x05
+	READWRITE       OpalLockingState = 0x01
+	READONLY        OpalLockingState = 0x02
+	LOCKED          OpalLockingState = 0x03
+	ARCHIVELOCKED   OpalLockingState = 0x04
+	ARCHIVEUNLOCKED OpalLockingState = 0x05
 )
 
 type MethodStatus int
@@ -538,9 +538,9 @@ type token interface {
 	token() // dummy
 }
 
-func (Token) token()        {}
-func (TinyAtom) token()     {}
-func (ShortAtom) token()    {}
-func (LockingState) token() {}
-func (UID) token()          {}
-func (Method) token()       {}
+func (OpalToken) token()        {}
+func (OpalTinyAtom) token()     {}
+func (OpalShortAtom) token()    {}
+func (OpalLockingState) token() {}
+func (OpalUID) token()          {}
+func (OpalMethod) token()       {}

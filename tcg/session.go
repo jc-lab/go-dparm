@@ -57,11 +57,11 @@ func (p *TcgSession) SetTimeout(timeoutMs uint32) {
 }
 
 // signAuthority: Buf([]uint8) | OpalUID
-func (p *TcgSession) Start(sp UID, hostChallenge string, signAuthority signAuthority) error {
+func (p *TcgSession) Start(sp OpalUID, hostChallenge string, signAuthority signAuthority) error {
 	var buf []uint8
 
 	switch v := signAuthority.(type) {
-	case UID:
+	case OpalUID:
 		buf = append([]uint8{uint8(BYTESTRING8)}, v[:]...)
 	case Buf:
 		buf = v
@@ -197,7 +197,7 @@ func (p *TcgSession) SendCommand(cmd *TcgCommand) (*TcgResponse, error) {
 		return nil, err
 	}
 
-	respHeader := (*TcgHeader)(unsafe.Pointer(resp.GetRespBuf()))
+	respHeader := (*OpalHeader)(unsafe.Pointer(resp.GetRespBuf()))
 	if respHeader.Cp.Length == 0 || respHeader.Pkt.Length == 0 || respHeader.Subpkt.Length == 0 {
 		// payload is not received
 		return resp, ErrIllegalResponse
