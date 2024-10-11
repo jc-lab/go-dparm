@@ -313,7 +313,7 @@ func (s *SgDriverHandle) SecurityCommand(rw bool, dma bool, protocol uint8, comI
 func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16, data []byte, timeoutSecs int) error {
 	var rootError error
 
-	if rw && data != nil {
+	if !rw && data != nil {
 		for i := range data {
 			data[i] = 0
 		}
@@ -324,7 +324,7 @@ func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16
 	for retry := 0; retry < 2; retry++ {
 		sgParams.InterfaceID = 'S'
 		sgParams.Timeout = uint32(timeoutSecs) * 1000
-		sgParams.DxferDirection = int32(internal.Ternary(rw, SG_DXFER_FROM_DEV, SG_DXFER_TO_DEV))
+		sgParams.DxferDirection = int32(internal.Ternary(rw, SG_DXFER_TO_DEV, SG_DXFER_FROM_DEV))
 		sgParams.SbLenWr = byte(unsafe.Sizeof(sgParams.SenseData))
 		sgParams.Sbp = &sgParams.SenseData[0]
 
@@ -349,7 +349,7 @@ func scsiSecurityCommand(fd int, rw bool, dma bool, protocol uint8, comId uint16
 		cmdBuffer := make([]byte, sgParams.CmdLen)
 		sgParams.Cmdp = &cmdBuffer[0]
 
-		if err := struc.Pack(internal.NewWrappedBuffer([]byte{*sgParams.Cmdp}), cdb); err != nil {
+		if err := struc.Pack(internal.NewWrappedBuffer(cmdBuffer), cdb); err != nil {
 			return err
 		}
 

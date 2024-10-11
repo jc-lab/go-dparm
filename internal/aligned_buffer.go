@@ -20,7 +20,7 @@ type AlignedBuffer struct {
 }
 
 func IsAlignedPointer(align int, pointer uintptr) bool {
-	return (pointer % uintptr(align)) > 0
+	return (pointer % uintptr(align)) == 0
 }
 
 func NewAlignedBuffer(align int, size int) *AlignedBuffer {
