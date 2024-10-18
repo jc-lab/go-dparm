@@ -48,12 +48,18 @@ func (p *DriveHandleImpl) Init() error {
 		p.Info.Serial = strings.Trim(string(rawSerial), trimSet)
 		p.Info.SmartEnabled = identity.CommandSetSupport.GetSmartCommands() && identity.CommandSetActive.GetSmartCommands()
 		p.Info.SsdCheckWeight = 0
+
+		deviceNominalFormFactor := identity.Word168.A & 0xf
+		if deviceNominalFormFactor == 5 {
+			p.Info.SsdCheckWeight++
+		}
 		if identity.NominalMediaRotationRate == 0 || identity.NominalMediaRotationRate == 1 {
 			p.Info.SsdCheckWeight++
 		}
-		if identity.DataSetManagementFeature.GetTrim() {
-			p.Info.SsdCheckWeight++
-		}
+
+		// DO NOT CHECK identity.DataSetManagementFeature.GetTrim()
+		// See https://support-en.wd.com/app/answers/detailweb/a_id/25185/~/trim-support-for-usb-flash%2C-ssd-and-hdd-on-windows-and-macos
+
 		p.Info.IsSsd = p.Info.SsdCheckWeight > 0
 	}
 
