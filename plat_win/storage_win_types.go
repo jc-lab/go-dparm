@@ -13,6 +13,7 @@ type DRIVE_LAYOUT_INFORMATION_GPT struct {
 	StartingUsableOffset uint64
 	UsableLength         uint64
 	MaxPartitionCount    uint32
+	_                    uint32
 }
 
 type PARTITION_INFORMATION_MBR struct {
@@ -28,18 +29,6 @@ type PARTITION_INFORMATION_GPT struct {
 	PartitionId   windows.GUID
 	Attributes    uint64
 	Name          [36]uint16
-}
-
-type PARTITION_INFORMATION_EX struct {
-	PartitionStyle   PartitionStyle
-	StartingOffset   int64
-	PartitionLength  int64
-	PartitionNumber  int32
-	RewritePartition bool
-	Rev01            bool
-	Rev02            bool
-	Rev03            bool
-	PartitionInfo    [112]byte
 }
 
 func (p *PARTITION_INFORMATION_EX) GetMbr() *PARTITION_INFORMATION_MBR {

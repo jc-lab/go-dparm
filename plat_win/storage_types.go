@@ -49,6 +49,19 @@ type DRIVE_LAYOUT_INFORMATION_MBR struct {
 	CheckSum  uint32
 }
 
+type PARTITION_INFORMATION_EX struct {
+	PartitionStyle   PartitionStyle
+	_                uint32
+	StartingOffset   int64
+	PartitionLength  int64
+	PartitionNumber  int32
+	RewritePartition bool
+	Rev01            bool
+	Rev02            bool
+	Rev03            bool
+	PartitionInfo    [112]byte
+}
+
 type DISK_EXTENT struct {
 	DiskNumber     uint32
 	StartingOffset uint64
