@@ -96,8 +96,6 @@ func (d *IntelNvmDriver) openImpl(handle windows.Handle) (*IntelNvmDriverHandle,
 	}
 
 	scsiPath := fmt.Sprintf("\\\\.\\SCSI%d:", scsiAddress.PortNumber)
-	log.Printf("\t[IntelNvm] scsi address: port=%d, path=%d, target=%d, lun=%d (%s)",
-		scsiAddress.PortNumber, scsiAddress.PathId, scsiAddress.TargetId, scsiAddress.Lun, scsiPath)
 
 	scsiHandle, err := OpenDevice(scsiPath)
 	if err != nil {
