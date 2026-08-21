@@ -29,6 +29,7 @@ func NewWindowsDriveFactory() *WindowsDriveFactory {
 		//windows.NewSamsungNvmeDriver(),
 		NewWindowsNvmeDriver(),
 		NewScsiDriver(),
+		NewIntelNvmDriver(),
 		NewAtaDriver(),
 	}
 	return factory
